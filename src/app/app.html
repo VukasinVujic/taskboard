@@ -1,5 +1,7 @@
 <h2>taskovi</h2>
 
+<app-add-task></app-add-task>
+
 <ul>
   @for(task of taskStore.tasks(); track task.id) {
   <li>{{ task.title }} - {{ task.status }}</li>

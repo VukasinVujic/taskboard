@@ -1,10 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TaskStoreService } from './core/services/task-store.service';
+import { AddTask } from './features/add-task/add-task';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, AddTask, CommonModule],
   standalone: true,
   templateUrl: './app.html',
   styleUrl: './app.scss',

@@ -1,0 +1,44 @@
+<p>add-task works!</p>
+
+<div>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="task-form">
+    <div class="field">
+      <label for="title">Title: </label>
+      <input type="text" id="title" formControlName="title" />
+
+      @if (titleControl?.touched && titleControl?.invalid) {
+      <div class="error">
+        @if (titleControl?.errors?.['required']) {
+        <span>Title is required</span>
+        } @if (titleControl?.errors?.['minlength']) {
+        <span>Title must be at least 3 characters</span>
+        }
+      </div>
+      }
+    </div>
+    <div class="field">
+      <label for="description"> Description: </label>
+      <textarea
+        id="description"
+        rows="2"
+        formControlName="description"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label for="priority"> Priority: </label>
+      <select id="priority" formControlName="priority">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">Heigh</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="dueDate">Duo date: </label>
+      <input type="date" formControlName="dueDate" />
+    </div>
+
+    <button type="submit" [disabled]="form.invalid">Add task</button>
+  </form>
+</div>
