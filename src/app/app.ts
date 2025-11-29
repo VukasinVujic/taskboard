@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { TaskStoreService } from './core/services/task-store.service';
-import { AddTask } from './features/add-task/add-task.component';
+import { AddTaskComponent } from './features/add-task/add-task.component';
 import { CommonModule } from '@angular/common';
-import { TaskList } from './features/task-list/task-list.component';
+import { TaskListComponent } from './features/task-list/task-list.component';
 
 @Component({
   selector: 'app-root',
-  imports: [AddTask, CommonModule, TaskList],
+  imports: [AddTaskComponent, CommonModule, TaskListComponent],
   standalone: true,
   templateUrl: './app.html',
   styleUrl: './app.scss',

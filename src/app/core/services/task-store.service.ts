@@ -1,13 +1,9 @@
-import { computed, Injectable, signal } from '@angular/core';
-import { Task } from '../models/task.model';
+import { Injectable } from '@angular/core';
+import { Task, TaskStatus } from '../models/task.model';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
-  private readonly _tasks = signal<Task[]>([]);
-
-  //   tasks = computed(() => this._tasks());
-
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
 
   readonly tasks$ = this._tasks$.asObservable();
@@ -21,13 +17,17 @@ export class TaskStoreService {
     this._tasks$.next(updated);
   }
 
-  updateTask(id: string, patch: Partial<Task>) {
-    this._tasks.update((list) =>
-      list.map((t) => (t.id === id ? { ...t, ...patch } : t))
+  updateTask(id: string, newStatus: TaskStatus) {
+    const allTasks = [...this.snapshot];
+
+    const tasksWithChangedTask = allTasks.map((t) =>
+      t.id === id ? { ...t, status: newStatus } : t
     );
+
+    this._tasks$.next(tasksWithChangedTask);
   }
 
   deleteTask(id: string) {
-    this._tasks.update((list) => list.filter((t) => t.id !== id));
+    // this._tasks.update((list) => list.filter((t) => t.id !== id));
   }
 }

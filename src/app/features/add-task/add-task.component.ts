@@ -14,7 +14,7 @@ import { TaskPriority, TaskStatus } from '../../core/models/task.model';
   templateUrl: './add-task.html',
   styleUrl: './add-task.scss',
 })
-export class AddTask {
+export class AddTaskComponent {
   private fb = inject(NonNullableFormBuilder);
   private taskStore = inject(TaskStoreService);
   private defaultPriority: TaskPriority = 'medium';

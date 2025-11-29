@@ -2,7 +2,16 @@
 @if (tasks$ | async; as tasks) {
 <ul>
   @for (task of tasks; track task.id) {
-  <li>{{ task.title }} - {{ task.status }}</li>
+  <li>
+    {{ task.title }} - {{ task.status }}
+
+    <button (click)="onMarkAsDone(task.id)">Mark as done</button>
+    <button (click)="onMoveToDo(task.id)">Move as Todo</button>
+    <button (click)="onMoveToInProgress(task.id)">
+      Move as To in Progress
+    </button>
+  </li>
+
   }
 </ul>
 }
