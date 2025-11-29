@@ -1,18 +1,17 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { TaskStoreService } from './core/services/task-store.service';
-import { AddTask } from './features/add-task/add-task';
+import { AddTask } from './features/add-task/add-task.component';
 import { CommonModule } from '@angular/common';
+import { TaskList } from './features/task-list/task-list.component';
 
 @Component({
   selector: 'app-root',
-  imports: [AddTask, CommonModule],
+  imports: [AddTask, CommonModule, TaskList],
   standalone: true,
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly title = signal('taskboard');
-
   protected readonly taskStore = inject(TaskStoreService);
 
   constructor() {
@@ -23,6 +22,5 @@ export class App {
       status: 'todo',
       createdAt: new Date().toISOString(),
     });
-    // console.log('state: ', this.taskStore.tasks());
   }
 }

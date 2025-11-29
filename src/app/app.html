@@ -2,10 +2,4 @@
 
 <app-add-task></app-add-task>
 
-@if (taskStore.tasks$ | async; as tasks) {
-<ul>
-  @for (task of tasks; track task.id) {
-  <li>{{ task.title }} - {{ task.status }}</li>
-  }
-</ul>
-}
+<app-task-list></app-task-list>

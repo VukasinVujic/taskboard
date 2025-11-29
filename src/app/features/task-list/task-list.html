@@ -1,0 +1,8 @@
+<p>TASK list</p>
+@if (tasks$ | async; as tasks) {
+<ul>
+  @for (task of tasks; track task.id) {
+  <li>{{ task.title }} - {{ task.status }}</li>
+  }
+</ul>
+}
