@@ -28,7 +28,6 @@ export class TaskStoreService {
   }
 
   deleteTask(id: string) {
-    const allTasks = [...this.snapshot];
-    this._tasks$.next(allTasks.filter((task) => task.id !== id));
+    this._tasks$.next(this.snapshot.filter((task) => task.id !== id));
   }
 }

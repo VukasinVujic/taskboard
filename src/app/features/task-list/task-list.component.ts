@@ -12,22 +12,12 @@ import { TaskStatus } from '../../core/models/task.model';
 })
 export class TaskListComponent {
   protected readonly taskStore = inject(TaskStoreService);
+  statuses: TaskStatus[] = ['todo', 'done', 'in-progress'];
 
   public tasks$ = this.taskStore.tasks$;
 
-  // onChangeStatus(id: string, status: TaskStatus) {
-  //   this.taskStore.updateTask(id, status);
-  // }
-
-  onMarkAsDone(id: string) {
-    this.taskStore.updateTask(id, 'done');
-  }
-
-  onMoveToInProgress(id: string) {
-    this.taskStore.updateTask(id, 'in-progress');
-  }
-  onMoveToDo(id: string) {
-    this.taskStore.updateTask(id, 'todo');
+  onChangeStatus(id: string, status: TaskStatus) {
+    this.taskStore.updateTask(id, status);
   }
 
   deleteTask(id: string) {
