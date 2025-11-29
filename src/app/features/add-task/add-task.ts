@@ -31,9 +31,7 @@ export class AddTask {
         Validators.pattern(/^(low|medium|high)$/),
       ],
     }),
-
     dueDate: this.fb.control(''),
-    createdAt: this.fb.control('', { validators: [Validators.required] }),
   });
 
   get titleControl() {

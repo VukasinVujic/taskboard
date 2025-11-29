@@ -1,14 +1,24 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { Task } from '../models/task.model';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
   private readonly _tasks = signal<Task[]>([]);
 
-  tasks = computed(() => this._tasks());
+  //   tasks = computed(() => this._tasks());
+
+  private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
+
+  readonly tasks$ = this._tasks$.asObservable();
+
+  private get snapshot(): Task[] {
+    return this._tasks$.value;
+  }
 
   addTask(task: Task) {
-    this._tasks.update((list) => [...list, task]);
+    const updated = [...this.snapshot, task];
+    this._tasks$.next(updated);
   }
 
   updateTask(id: string, patch: Partial<Task>) {

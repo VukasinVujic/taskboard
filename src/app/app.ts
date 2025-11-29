@@ -1,12 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { TaskStoreService } from './core/services/task-store.service';
 import { AddTask } from './features/add-task/add-task';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AddTask, CommonModule],
+  imports: [AddTask, CommonModule],
   standalone: true,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -24,6 +23,6 @@ export class App {
       status: 'todo',
       createdAt: new Date().toISOString(),
     });
-    console.log('state: ', this.taskStore.tasks());
+    // console.log('state: ', this.taskStore.tasks());
   }
 }
