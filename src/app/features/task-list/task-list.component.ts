@@ -29,4 +29,8 @@ export class TaskListComponent {
   onMoveToDo(id: string) {
     this.taskStore.updateTask(id, 'todo');
   }
+
+  deleteTask(id: string) {
+    this.taskStore.deleteTask(id);
+  }
 }

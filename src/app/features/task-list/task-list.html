@@ -5,10 +5,18 @@
   <li>
     {{ task.title }} - {{ task.status }}
 
-    <button (click)="onMarkAsDone(task.id)">Mark as done</button>
-    <button (click)="onMoveToDo(task.id)">Move as Todo</button>
-    <button (click)="onMoveToInProgress(task.id)">
+    <button (click)="onMarkAsDone(task.id)" style="margin-left: 30px">
+      Mark as done
+    </button>
+    <button (click)="onMoveToDo(task.id)" style="margin-left: 30px">
+      Move as Todo
+    </button>
+    <button (click)="onMoveToInProgress(task.id)" style="margin-left: 30px">
       Move as To in Progress
+    </button>
+
+    <button (click)="deleteTask(task.id)" style="margin-left: 30px">
+      Delete task
     </button>
   </li>
 

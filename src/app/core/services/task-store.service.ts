@@ -28,6 +28,7 @@ export class TaskStoreService {
   }
 
   deleteTask(id: string) {
-    // this._tasks.update((list) => list.filter((t) => t.id !== id));
+    const allTasks = [...this.snapshot];
+    this._tasks$.next(allTasks.filter((task) => task.id !== id));
   }
 }
