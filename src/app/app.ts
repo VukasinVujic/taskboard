@@ -14,13 +14,5 @@ import { TaskList } from './features/task-list/task-list';
 export class App {
   protected readonly taskStore = inject(TaskStoreService);
 
-  constructor() {
-    this.taskStore.addTask({
-      id: crypto.randomUUID(),
-      title: 'Prvi test task brate moiii',
-      priority: 'medium',
-      status: 'todo',
-      createdAt: new Date().toISOString(),
-    });
-  }
+  constructor() {}
 }
