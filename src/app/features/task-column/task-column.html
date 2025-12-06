@@ -1,0 +1,14 @@
+<div class="column">
+  <h3>{{ title }}</h3>
+  @if (tasks$ | async; as tasks) { @for( task of tasks; track task.id){
+  <div>{{ task.title }} - {{ task.status }}</div>
+  <div class="actions">
+    @for (status of statuses; track status){
+    <button (click)="onChangeStatus(task.id, status)">
+      {{ status }}
+    </button>
+    }
+    <button (click)="onDeleteTask(task.id)">Delete task</button>
+  </div>
+  }}
+</div>

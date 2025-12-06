@@ -1,47 +1,25 @@
-<p>TASK list</p>
-@if (tasks$ | async; as tasks) {
 <div class="kanaban">
-  <div class="column">
-    TODO @if (todo$ | async; as tasks) { @for( task of tasks; track task.id){
-    <div>{{ task.title }} - {{ task.status }}</div>
-    <div class="actions">
-      @for (status of statuses; track status){
-      <button (click)="onChangeStatus(task.id, status)">{{ status }}</button>
-      }
+  <app-task-column
+    title="TODO"
+    [tasks$]="todo$"
+    [statuses]="statuses"
+    (changeStatus)="onChangeStatus($event.id, $event.status)"
+    (deleteTask)="deleteTask($event)"
+  />
 
-      <button (click)="deleteTask(task.id)">Delete task</button>
-    </div>
+  <app-task-column
+    title="IN PROGRESS"
+    [tasks$]="inProgress$"
+    [statuses]="statuses"
+    (changeStatus)="onChangeStatus($event.id, $event.status)"
+    (deleteTask)="deleteTask($event)"
+  />
 
-    } }
-  </div>
-  <div class="column">
-    IN PROGRESS @if(inProgress$ | async; as tasks) { @for(task of tasks; track
-    task.id) {
-    <div>{{ task.title }} - {{ task.status }}</div>
-    <div class="actions">
-      @for (status of statuses; track status){
-      <button (click)="onChangeStatus(task.id, status)">{{ status }}</button>
-      }
-
-      <button (click)="deleteTask(task.id)">Delete task</button>
-    </div>
-
-    } }
-  </div>
-  <div class="column">
-    DONE @if(done$ | async; as tasks) { @for (task of tasks; track task.id) {
-    <div>{{ task.title }} - {{ task.status }}</div>
-    <div class="actions">
-      @for (status of statuses; track status){
-      <button (click)="onChangeStatus(task.id, status)">{{ status }}</button>
-      }
-
-      <button (click)="deleteTask(task.id)">Delete task</button>
-    </div>
-
-    } }
-  </div>
+  <app-task-column
+    title="DONE"
+    [tasks$]="done$"
+    [statuses]="statuses"
+    (changeStatus)="onChangeStatus($event.id, $event.status)"
+    (deleteTask)="deleteTask($event)"
+  />
 </div>
-<br />
-<br />
-}

@@ -1,17 +1,19 @@
 import { Component, inject } from '@angular/core';
-import { TaskStoreService } from '../../core/services/task-store.service';
 import { CommonModule } from '@angular/common';
-import { TaskStatus, Task } from '../../core/models/task.model';
 import { map, Observable } from 'rxjs';
+
+import { TaskStatus, Task } from '../../core/models/task.model';
+import { TaskStoreService } from '../../core/services/task-store.service';
+import { TaskColumn } from '../task-column/task-column';
 
 @Component({
   selector: 'app-task-list',
-  imports: [CommonModule],
+  imports: [CommonModule, TaskColumn],
   standalone: true,
   templateUrl: './task-list.html',
   styleUrl: './task-list.scss',
 })
-export class TaskListComponent {
+export class TaskList {
   protected readonly taskStore = inject(TaskStoreService);
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
