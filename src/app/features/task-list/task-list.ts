@@ -25,7 +25,14 @@ export class TaskList {
 
   private getTasksByStatus(status: TaskStatus): Observable<Task[]> {
     return this.tasks$.pipe(
-      map((tasks) => tasks.filter((t) => t.status === status))
+      map((tasks) =>
+        tasks
+          .filter((t) => t.status === status)
+          .sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )
+      )
     );
   }
 
