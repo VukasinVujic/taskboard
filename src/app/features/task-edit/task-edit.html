@@ -1,5 +1,3 @@
-<p>task-edit works!</p>
-
 <div>
   <form [formGroup]="form" (ngSubmit)="submit()" class="task-form">
     <div class="field">
@@ -39,6 +37,6 @@
       <input type="date" formControlName="dueDate" />
     </div>
 
-    <button type="submit" [disabled]="form.invalid">Add task</button>
+    <button type="submit" [disabled]="form.invalid">Save Task</button>
   </form>
 </div>

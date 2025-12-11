@@ -14,13 +14,11 @@
       <button class="column-btn column-del" (click)="onDeleteTask(task.id)">
         Delete task
       </button>
-      <button class="column-btn" (click)="onEditTask(task.id)">
-        Edit task
-      </button>
+      <button class="column-btn" (click)="onEditTask(task)">Edit task</button>
     </div>
   </div>
   }} @if(showEditTask) {
 
-  <app-task-edit />
+  <app-task-edit [task]="selectedTask" />
   }
 </div>

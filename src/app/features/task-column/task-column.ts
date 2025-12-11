@@ -18,6 +18,7 @@ export class TaskColumn {
   @Input() statuses: TaskStatus[] = [];
 
   showEditTask: boolean = false;
+  selectedTask: Task | null = null;
 
   @Output() changeStatus = new EventEmitter<{
     id: string;
@@ -34,8 +35,8 @@ export class TaskColumn {
     this.changeStatus.emit({ id, status });
   }
 
-  onEditTask(id: string) {
-    this.showEditTask = !this.showEditTask;
-    console.log('aaaa');
+  onEditTask(task: Task) {
+    this.showEditTask = true;
+    this.selectedTask = task;
   }
 }
