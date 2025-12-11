@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
+import { TaskEdit } from '../task-edit/task-edit';
 
 @Component({
   selector: 'app-task-column',
-  imports: [CommonModule],
+  imports: [CommonModule, TaskEdit],
   standalone: true,
   templateUrl: './task-column.html',
   styleUrl: './task-column.scss',
@@ -15,6 +16,8 @@ export class TaskColumn {
   @Input() title = '';
   @Input() tasks$!: Observable<Task[]>;
   @Input() statuses: TaskStatus[] = [];
+
+  showEditTask: boolean = false;
 
   @Output() changeStatus = new EventEmitter<{
     id: string;
@@ -29,5 +32,10 @@ export class TaskColumn {
 
   onChangeStatus(id: string, status: TaskStatus) {
     this.changeStatus.emit({ id, status });
+  }
+
+  onEditTask(id: string) {
+    this.showEditTask = !this.showEditTask;
+    console.log('aaaa');
   }
 }
