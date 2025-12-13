@@ -19,6 +19,10 @@
   </div>
   }} @if(showEditTask) {
 
-  <app-task-edit [task]="selectedTask" (save)="saveEdit($event)" />
+  <app-task-edit
+    [task]="selectedTask"
+    (save)="saveEdit($event)"
+    (cancel)="closeEdit()"
+  />
   }
 </div>

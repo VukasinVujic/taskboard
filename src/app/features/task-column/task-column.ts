@@ -46,4 +46,9 @@ export class TaskColumn {
     this.showEditTask = false;
     this.selectedTask = null;
   }
+
+  closeEdit() {
+    this.showEditTask = false;
+    this.selectedTask = null;
+  }
 }

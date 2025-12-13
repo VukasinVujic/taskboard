@@ -29,6 +29,7 @@ export class TaskEdit implements OnChanges {
 
   @Input() task: Task | null = null;
   @Output() save = new EventEmitter<Task>();
+  @Output() cancel = new EventEmitter();
 
   form = this.fb.group({
     title: this.fb.control('', {
@@ -100,5 +101,9 @@ export class TaskEdit implements OnChanges {
       dueDate: dueDate === '' ? null : dueDate,
       createdAt: this.task.createdAt,
     });
+  }
+
+  onCancel() {
+    this.cancel.emit();
   }
 }
