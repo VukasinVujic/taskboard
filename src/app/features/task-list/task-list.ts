@@ -37,10 +37,14 @@ export class TaskList {
   }
 
   onChangeStatus(id: string, status: TaskStatus) {
-    this.taskStore.updateTask(id, status);
+    this.taskStore.updateTaskByStatus(id, status);
   }
 
   deleteTask(id: string) {
     this.taskStore.deleteTask(id);
+  }
+
+  onUpdateTask(updatedTask: Task) {
+    this.taskStore.updateTaskDetails(updatedTask);
   }
 }

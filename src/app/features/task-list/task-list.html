@@ -5,6 +5,7 @@
     [statuses]="statuses"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
+    (saveTask)="onUpdateTask($event)"
   />
 
   <app-task-column
@@ -13,6 +14,7 @@
     [statuses]="statuses"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
+    (saveTask)="onUpdateTask($event)"
   />
 
   <app-task-column
@@ -21,5 +23,6 @@
     [statuses]="statuses"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
+    (saveTask)="onUpdateTask($event)"
   />
 </div>

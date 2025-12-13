@@ -23,13 +23,21 @@ export class TaskStoreService {
     this.persist(updated);
   }
 
-  updateTask(id: string, newStatus: TaskStatus): void {
+  updateTaskByStatus(id: string, newStatus: TaskStatus): void {
     const allTasks = [...this.snapshot];
 
     const updated = allTasks.map((t) =>
       t.id === id ? { ...t, status: newStatus } : t
     );
 
+    this._tasks$.next(updated);
+    this.persist(updated);
+  }
+
+  updateTaskDetails(task: Task) {
+    const allTasks = [...this.snapshot];
+
+    const updated = allTasks.map((t) => (t.id === task.id ? task : t));
     this._tasks$.next(updated);
     this.persist(updated);
   }

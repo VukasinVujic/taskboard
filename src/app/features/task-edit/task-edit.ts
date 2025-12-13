@@ -1,8 +1,10 @@
 import {
   Component,
+  EventEmitter,
   inject,
   Input,
   OnChanges,
+  Output,
   SimpleChanges,
 } from '@angular/core';
 import {
@@ -12,7 +14,6 @@ import {
 } from '@angular/forms';
 
 import { Task, TaskPriority, TaskStatus } from '../../core/models/task.model';
-import { TaskStoreService } from '../../core/services/task-store.service';
 
 @Component({
   selector: 'app-task-edit',
@@ -23,11 +24,11 @@ import { TaskStoreService } from '../../core/services/task-store.service';
 })
 export class TaskEdit implements OnChanges {
   private fb = inject(NonNullableFormBuilder);
-  private taskStore = inject(TaskStoreService);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
 
   @Input() task: Task | null = null;
+  @Output() save = new EventEmitter<Task>();
 
   form = this.fb.group({
     title: this.fb.control('', {
@@ -83,23 +84,21 @@ export class TaskEdit implements OnChanges {
       return;
     }
 
-    const { title, description, priority, dueDate } = this.form.getRawValue();
+    if (!this.task) {
+      return;
+    }
 
-    // this.taskStore.addTask({
-    //   id: crypto.randomUUID(),
-    //   title,
-    //   description: description || undefined,
-    //   status: this.defaultStatus,
-    //   priority: priority ?? 'medium',
-    //   dueDate: dueDate,
-    //   createdAt: new Date().toISOString(),
-    // });
+    const { title, description, priority, dueDate, status } =
+      this.form.getRawValue();
 
-    // this.form.reset({
-    //   title: '',
-    //   description: '',
-    //   priority: 'medium',
-    //   dueDate: '',
-    // });
+    this.save.emit({
+      id: this.task.id,
+      title,
+      description: description === '' ? undefined : description,
+      priority,
+      status,
+      dueDate: dueDate === '' ? null : dueDate,
+      createdAt: this.task.createdAt,
+    });
   }
 }

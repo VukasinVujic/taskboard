@@ -26,6 +26,7 @@ export class TaskColumn {
   }>();
 
   @Output() deleteTask = new EventEmitter<string>();
+  @Output() saveTask = new EventEmitter<Task>();
 
   onDeleteTask(id: string) {
     this.deleteTask.emit(id);
@@ -35,8 +36,14 @@ export class TaskColumn {
     this.changeStatus.emit({ id, status });
   }
 
-  onEditTask(task: Task) {
+  openEdit(task: Task) {
     this.showEditTask = true;
     this.selectedTask = task;
+  }
+
+  saveEdit(updatedTask: Task) {
+    this.saveTask.emit(updatedTask);
+    this.showEditTask = false;
+    this.selectedTask = null;
   }
 }
