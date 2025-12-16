@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 
@@ -17,16 +23,20 @@ export class TaskColumn {
   @Input() tasks$!: Observable<Task[]>;
   @Input() statuses: TaskStatus[] = [];
 
-  showEditTask: boolean = false;
-  selectedTask: Task | null = null;
-
   @Output() changeStatus = new EventEmitter<{
     id: string;
     status: TaskStatus;
   }>();
-
   @Output() deleteTask = new EventEmitter<string>();
   @Output() saveTask = new EventEmitter<Task>();
+
+  @HostListener('document:keydown.escape')
+  onEsc() {
+    this.closeEdit();
+  }
+
+  showEditTask: boolean = false;
+  selectedTask: Task | null = null;
 
   onDeleteTask(id: string) {
     this.deleteTask.emit(id);
