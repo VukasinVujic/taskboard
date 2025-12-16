@@ -29,3 +29,43 @@
     }
   }
 }
+
+.task-container {
+  position: fixed;
+  inset: 0;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .modal {
+    background-color: white;
+    border-radius: 05 rem;
+    min-width: 400px;
+    max-width: 90vw;
+    overflow: hidden;
+
+    .task-header {
+      display: flex;
+      background-color: lightblue;
+      justify-content: space-between;
+      padding: 20px;
+      border-radius: 0.5rem 0.5rem 0 0;
+
+      .task-header-txt {
+        align-content: center;
+      }
+
+      .task-x-btn {
+        border-radius: 0.5rem;
+        padding: 10px;
+        background-color: red;
+        color: white;
+        font-size: large;
+        font-weight: 600;
+      }
+    }
+  }
+}
