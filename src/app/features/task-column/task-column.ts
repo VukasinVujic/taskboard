@@ -34,6 +34,7 @@ export class TaskColumn {
   @HostListener('document:keydown.escape')
   onEsc() {
     this.closeEdit();
+    this.closeDialog();
   }
 
   showEditTask: boolean = false;
