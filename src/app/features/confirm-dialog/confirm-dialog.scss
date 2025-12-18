@@ -1,0 +1,16 @@
+.confirm-dialog-container {
+  background-color: lightblue;
+  padding: 20px;
+  border-radius: 0.5rem;
+  .con-dial-btn-container {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 20px;
+
+    .con-dial-btn {
+      padding: 10px 15px;
+      border-radius: 0.5rem;
+      background-color: lightgreen;
+    }
+  }
+}

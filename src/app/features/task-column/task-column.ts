@@ -10,10 +10,11 @@ import { Observable } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskEdit } from '../task-edit/task-edit';
+import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 
 @Component({
   selector: 'app-task-column',
-  imports: [CommonModule, TaskEdit],
+  imports: [CommonModule, TaskEdit, ConfirmDialog],
   standalone: true,
   templateUrl: './task-column.html',
   styleUrl: './task-column.scss',
@@ -37,9 +38,24 @@ export class TaskColumn {
 
   showEditTask: boolean = false;
   selectedTask: Task | null = null;
+  showDeleteTask: boolean = false;
+  action: string = 'delete';
+  selectedIdTask: string = '';
 
-  onDeleteTask(id: string) {
-    this.deleteTask.emit(id);
+  onOpenDialog(id: string) {
+    this.showDeleteTask = true;
+    this.selectedIdTask = id;
+  }
+
+  onDeleteTask(taskId: string) {
+    this.deleteTask.emit(taskId);
+    this.showDeleteTask = false;
+    this.selectedIdTask = '';
+  }
+
+  closeDialog() {
+    this.showDeleteTask = false;
+    this.selectedIdTask = '';
   }
 
   onChangeStatus(id: string, status: TaskStatus) {

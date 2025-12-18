@@ -30,7 +30,8 @@
   }
 }
 
-.task-container {
+.task-container,
+.confirm-dialog-container {
   position: fixed;
   inset: 0;
   border-radius: 0.5rem;
@@ -42,7 +43,7 @@
 
   .modal {
     background-color: white;
-    border-radius: 05 rem;
+    border-radius: 0.5rem;
     min-width: 400px;
     max-width: 90vw;
     overflow: hidden;

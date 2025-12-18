@@ -11,7 +11,7 @@
         {{ status }}
       </button>
       }
-      <button class="column-btn column-del" (click)="onDeleteTask(task.id)">
+      <button class="column-btn column-del" (click)="onOpenDialog(task.id)">
         Delete task
       </button>
       <button class="column-btn" (click)="openEdit(task)">Edit task</button>
@@ -30,6 +30,17 @@
         [task]="selectedTask"
         (save)="saveEdit($event)"
         (cancel)="closeEdit()"
+      />
+    </div>
+  </div>
+  } @if(showDeleteTask){
+  <div class="confirm-dialog-container" (click)="closeDialog()">
+    <div (click)="$event.stopPropagation()">
+      <app-confirm-dialog
+        [taskId]="selectedIdTask"
+        [action]="action"
+        (confirm)="onDeleteTask($event)"
+        (cancel)="closeDialog()"
       />
     </div>
   </div>
