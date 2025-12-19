@@ -2,8 +2,10 @@ import {
   Component,
   EventEmitter,
   HostListener,
+  inject,
   Input,
   Output,
+  Renderer2,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
@@ -37,6 +39,8 @@ export class TaskColumn {
     this.closeDialog();
   }
 
+  private renderer = inject(Renderer2);
+
   showEditTask: boolean = false;
   selectedTask: Task | null = null;
   showDeleteTask: boolean = false;
@@ -46,17 +50,20 @@ export class TaskColumn {
   onOpenDialog(id: string) {
     this.showDeleteTask = true;
     this.selectedIdTask = id;
+    this.showOrLockScroll();
   }
 
   onDeleteTask(taskId: string) {
     this.deleteTask.emit(taskId);
     this.showDeleteTask = false;
     this.selectedIdTask = '';
+    this.showOrLockScroll();
   }
 
   closeDialog() {
     this.showDeleteTask = false;
     this.selectedIdTask = '';
+    this.showOrLockScroll();
   }
 
   onChangeStatus(id: string, status: TaskStatus) {
@@ -66,16 +73,25 @@ export class TaskColumn {
   openEdit(task: Task) {
     this.showEditTask = true;
     this.selectedTask = task;
+    this.showOrLockScroll();
   }
 
   saveEdit(updatedTask: Task) {
     this.saveTask.emit(updatedTask);
     this.showEditTask = false;
     this.selectedTask = null;
+    this.showOrLockScroll();
   }
 
   closeEdit() {
     this.showEditTask = false;
     this.selectedTask = null;
+    this.showOrLockScroll();
+  }
+
+  showOrLockScroll() {
+    this.showEditTask || this.showDeleteTask
+      ? this.renderer.setStyle(document.body, 'overflow', 'hidden')
+      : this.renderer.setStyle(document.body, 'overflow', 'auto');
   }
 }
