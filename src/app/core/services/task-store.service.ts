@@ -6,8 +6,13 @@ import { BehaviorSubject } from 'rxjs';
 export class TaskStoreService {
   private readonly STORAGE_KEY = 'taskboard_tasks';
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
+  lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
+
+  private clearLastDeletedTimeoutId: ReturnType<typeof setTimeout> | null =
+    null;
 
   readonly tasks$ = this._tasks$.asObservable();
+  readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
 
   constructor() {
     this.loadFromStorage();
@@ -15,6 +20,10 @@ export class TaskStoreService {
 
   private get snapshot(): Task[] {
     return this._tasks$.value;
+  }
+
+  private get lastDelTask(): Task | null {
+    return this.lastDeletedTaskSubject$.value;
   }
 
   addTask(task: Task): void {
@@ -44,8 +53,36 @@ export class TaskStoreService {
 
   deleteTask(id: string): void {
     const updated = this.snapshot.filter((task) => task.id !== id);
+
+    const lastOneTask = this.snapshot.find((task) => task.id === id);
+
+    if (lastOneTask) {
+      this.lastDeletedTaskSubject$.next(lastOneTask);
+
+      if (this.clearLastDeletedTimeoutId) {
+        clearTimeout(this.clearLastDeletedTimeoutId);
+      }
+
+      this.clearLastDeletedTimeoutId = setTimeout(() => {
+        this.lastDeletedTaskSubject$.next(null);
+        this.clearLastDeletedTimeoutId = null;
+      }, 3000);
+    }
+
     this._tasks$.next(updated);
     this.persist(updated);
+  }
+
+  undoDelete() {
+    if (!this.lastDelTask) return;
+
+    if (this.clearLastDeletedTimeoutId) {
+      clearTimeout(this.clearLastDeletedTimeoutId);
+      this.clearLastDeletedTimeoutId = null;
+    }
+
+    this.addTask(this.lastDelTask);
+    this.lastDeletedTaskSubject$.next(null);
   }
 
   private persist(tasks: Task[]): void {

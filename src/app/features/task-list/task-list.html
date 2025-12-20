@@ -26,3 +26,8 @@
     (saveTask)="onUpdateTask($event)"
   />
 </div>
+@if (lastDeletedTask$ | async; as t) {
+<button (click)="unDoDeletedTask()" class="undo-bar">
+  UNDO deleted task {{ t.title }}
+</button>
+}

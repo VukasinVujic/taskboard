@@ -18,6 +18,7 @@ export class TaskList {
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
   public tasks$ = this.taskStore.tasks$;
+  public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
 
   todo$ = this.getTasksByStatus('todo');
   inProgress$ = this.getTasksByStatus('in-progress');
@@ -46,5 +47,9 @@ export class TaskList {
 
   onUpdateTask(updatedTask: Task) {
     this.taskStore.updateTaskDetails(updatedTask);
+  }
+
+  unDoDeletedTask() {
+    this.taskStore.undoDelete();
   }
 }
