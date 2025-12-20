@@ -30,4 +30,8 @@
 <button (click)="unDoDeletedTask()" class="undo-bar">
   UNDO deleted task {{ t.title }}
 </button>
+
+} @if(undoCountdown$ | async; as value){
+
+<div>Undo za {{ value }}</div>
 }

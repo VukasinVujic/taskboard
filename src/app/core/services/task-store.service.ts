@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Task, TaskStatus } from '../models/task.model';
-import { BehaviorSubject } from 'rxjs';
+import {
+  BehaviorSubject,
+  map,
+  Subject,
+  switchMap,
+  takeWhile,
+  timer,
+} from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
@@ -13,6 +20,16 @@ export class TaskStoreService {
 
   readonly tasks$ = this._tasks$.asObservable();
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
+  deleteTriggered$ = new Subject<void>();
+
+  undoCountdown$ = this.deleteTriggered$.pipe(
+    switchMap(() =>
+      timer(0, 1000).pipe(
+        map((tick) => 5 - tick),
+        takeWhile((value) => value >= 0)
+      )
+    )
+  );
 
   constructor() {
     this.loadFromStorage();
@@ -53,10 +70,11 @@ export class TaskStoreService {
 
   deleteTask(id: string): void {
     const updated = this.snapshot.filter((task) => task.id !== id);
-
     const lastOneTask = this.snapshot.find((task) => task.id === id);
 
     if (lastOneTask) {
+      console.log('aaaaa');
+      this.deleteTriggered$.next();
       this.lastDeletedTaskSubject$.next(lastOneTask);
 
       if (this.clearLastDeletedTimeoutId) {
@@ -66,7 +84,7 @@ export class TaskStoreService {
       this.clearLastDeletedTimeoutId = setTimeout(() => {
         this.lastDeletedTaskSubject$.next(null);
         this.clearLastDeletedTimeoutId = null;
-      }, 3000);
+      }, 10000);
     }
 
     this._tasks$.next(updated);
