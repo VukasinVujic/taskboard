@@ -20,6 +20,7 @@ export class TaskList {
   public tasks$ = this.taskStore.tasks$;
   public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
   public undoCountdown$ = this.taskStore.undoCountdown$;
+  public showUndo$ = this.taskStore.showUndo$;
 
   todo$ = this.getTasksByStatus('todo');
   inProgress$ = this.getTasksByStatus('in-progress');
