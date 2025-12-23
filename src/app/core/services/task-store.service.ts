@@ -10,8 +10,10 @@ import {
   startWith,
   Subject,
   switchMap,
+  take,
   takeUntil,
   takeWhile,
+  tap,
   timer,
 } from 'rxjs';
 
@@ -21,14 +23,12 @@ export class TaskStoreService {
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
   lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
 
-  private clearLastDeletedTimeoutId: ReturnType<typeof setTimeout> | null =
-    null;
-
   readonly tasks$ = this._tasks$.asObservable();
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
 
+  // showing the counter value
   undoCountdown$ = this.deleteTriggered$.pipe(
     switchMap(() =>
       timer(0, 1000).pipe(
@@ -40,19 +40,29 @@ export class TaskStoreService {
     shareReplay({ bufferSize: 1, refCount: true })
   );
 
+  // only to show/hide undo container
   showUndo$ = merge(
     this.deleteTriggered$.pipe(mapTo(true)),
     this.undoClicked$.pipe(mapTo(false)),
-    this.undoCountdown$
-      .pipe(
-        filter((v) => v === 0),
-        mapTo(false)
-      )
-      .pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }))
-  );
+    this.undoCountdown$.pipe(
+      filter((v) => v === 0),
+      mapTo(false)
+    )
+  ).pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }));
 
   constructor() {
     this.loadFromStorage();
+    this.deleteTriggered$
+      .pipe(
+        switchMap(() =>
+          merge(
+            this.undoClicked$,
+            this.undoCountdown$.pipe(filter((v) => v === 0))
+          ).pipe(take(1))
+        ),
+        tap(() => this.lastDeletedTaskSubject$.next(null))
+      )
+      .subscribe();
   }
 
   private get snapshot(): Task[] {
@@ -95,15 +105,6 @@ export class TaskStoreService {
     if (lastOneTask) {
       this.deleteTriggered$.next();
       this.lastDeletedTaskSubject$.next(lastOneTask);
-
-      if (this.clearLastDeletedTimeoutId) {
-        clearTimeout(this.clearLastDeletedTimeoutId);
-      }
-
-      this.clearLastDeletedTimeoutId = setTimeout(() => {
-        this.lastDeletedTaskSubject$.next(null);
-        this.clearLastDeletedTimeoutId = null;
-      }, 10000);
     }
 
     this._tasks$.next(updated);
@@ -111,20 +112,17 @@ export class TaskStoreService {
   }
 
   undoDelete() {
-    if (!this.lastDelTask) return;
+    const task = this.lastDelTask;
 
-    if (this.clearLastDeletedTimeoutId) {
-      clearTimeout(this.clearLastDeletedTimeoutId);
-      this.clearLastDeletedTimeoutId = null;
-    }
+    if (!task) return;
+
+    this.addTask(task);
     this.undoClicked$.next();
-
-    this.addTask(this.lastDelTask);
-    this.lastDeletedTaskSubject$.next(null);
   }
 
   private persist(tasks: Task[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks));
+    const safe = tasks.filter(Boolean);
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(safe));
   }
 
   private loadFromStorage() {
@@ -133,7 +131,19 @@ export class TaskStoreService {
     if (!stored) return;
 
     try {
-      const tasks = JSON.parse(stored) as Task[];
+      const raw = JSON.parse(stored) as unknown[];
+
+      const tasks = raw.filter((t): t is Task => {
+        return (
+          !!t &&
+          typeof t === 'object' &&
+          'id' in t &&
+          'title' in t &&
+          'status' in t &&
+          'createdAt' in t
+        );
+      });
+
       this._tasks$.next(tasks);
     } catch (e) {
       console.error('Failed to parse tasks from storage', e);
