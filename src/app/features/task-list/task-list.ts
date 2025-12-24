@@ -5,6 +5,7 @@ import { map, Observable } from 'rxjs';
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskColumn } from '../task-column/task-column';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-task-list',
@@ -15,12 +16,14 @@ import { TaskColumn } from '../task-column/task-column';
 })
 export class TaskList {
   protected readonly taskStore = inject(TaskStoreService);
+  protected readonly toastService = inject(ToastService);
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
   public tasks$ = this.taskStore.tasks$;
   public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
+  public showToast$ = this.toastService.showToast$;
 
   todo$ = this.getTasksByStatus('todo');
   inProgress$ = this.getTasksByStatus('in-progress');
@@ -53,5 +56,9 @@ export class TaskList {
 
   unDoDeletedTask() {
     this.taskStore.undoDelete();
+  }
+
+  showToast() {
+    this.toastService.show('message aaaa');
   }
 }

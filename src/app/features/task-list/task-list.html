@@ -36,3 +36,9 @@
 
 <div>Undo za {{ value }}</div>
 } }
+
+<button (click)="showToast()">show toast</button>
+@if(showToast$ | async) {
+
+<div>show toast message</div>
+}
