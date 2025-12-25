@@ -38,7 +38,9 @@
 } }
 
 <button (click)="showToast()">show toast</button>
-@if(showToast$ | async) {
 
-<div>show toast message</div>
-}
+@if (toastVm$ | async; as vm) { @if(vm.visible){
+
+{{ vm.message }} - {{ vm.countdown }}
+
+} }

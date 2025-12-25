@@ -24,6 +24,7 @@ export class TaskList {
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
   public showToast$ = this.toastService.showToast$;
+  public toastVm$ = this.toastService.toastVm$;
 
   todo$ = this.getTasksByStatus('todo');
   inProgress$ = this.getTasksByStatus('in-progress');
@@ -59,6 +60,6 @@ export class TaskList {
   }
 
   showToast() {
-    this.toastService.show('message aaaa');
+    this.toastService.show('message aaaa adadssdf');
   }
 }

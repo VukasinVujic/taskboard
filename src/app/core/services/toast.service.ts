@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
+  combineLatest,
   filter,
   map,
   mapTo,
@@ -41,6 +42,14 @@ export class ToastService {
       mapTo(false)
     )
   ).pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }));
+
+  toastVm$ = combineLatest([
+    this.showToast$,
+    this.toastMessage$,
+    this.countDown$.pipe(startWith(null)),
+  ]).pipe(
+    map(([visible, message, countdown]) => ({ visible, message, countdown }))
+  );
 
   show(message: string) {
     this.toastTriggered$.next(message);
