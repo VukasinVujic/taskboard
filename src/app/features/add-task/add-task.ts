@@ -6,6 +6,7 @@ import {
 } from '@angular/forms';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-add-task',
@@ -19,6 +20,7 @@ export class AddTask {
   private taskStore = inject(TaskStoreService);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
+  protected readonly toastService = inject(ToastService);
 
   form = this.fb.group({
     title: this.fb.control('', {
@@ -62,5 +64,7 @@ export class AddTask {
       priority: 'medium',
       dueDate: '',
     });
+
+    this.toastService.show('Task Created');
   }
 }

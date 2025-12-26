@@ -62,4 +62,8 @@ export class TaskList {
   showToast() {
     this.toastService.show('message aaaa adadssdf');
   }
+
+  closeToast() {
+    this.toastService.close();
+  }
 }

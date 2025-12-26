@@ -1,3 +1,18 @@
+@if (toastVm$ | async; as vm) { @if(vm.visible){
+<div class="toast">
+  {{ vm.message }}
+
+  @if( vm.countdown !== null){
+  <span>
+    {{ vm.countdown }}
+  </span>
+
+  }
+  <button (click)="closeToast()">X</button>
+</div>
+
+} }
+
 <div class="kanaban">
   <app-task-column
     title="TODO"
@@ -35,12 +50,4 @@
 } @if(undoCountdown$ | async; as value) {
 
 <div>Undo za {{ value }}</div>
-} }
-
-<button (click)="showToast()">show toast</button>
-
-@if (toastVm$ | async; as vm) { @if(vm.visible){
-
-{{ vm.message }} - {{ vm.countdown }}
-
 } }
