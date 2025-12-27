@@ -14,16 +14,23 @@ import {
   timer,
 } from 'rxjs';
 
+export type ToastType = 'success' | 'error' | 'info';
+
+interface ToastPayload {
+  message: string;
+  type: ToastType;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ToastService {
-  readonly toastTriggered$ = new Subject<string>();
+  readonly toastTriggered$ = new Subject<ToastPayload>();
   readonly toastClosed$ = new Subject<void>();
 
-  toastMessage$ = this.toastTriggered$.pipe(
+  toastData$ = this.toastTriggered$.pipe(
     shareReplay({ bufferSize: 1, refCount: true })
   );
 
-  countDown$ = this.toastMessage$.pipe(
+  countDown$ = this.toastData$.pipe(
     switchMap(() =>
       timer(0, 1000).pipe(
         map((tick) => 5 - tick),
@@ -45,14 +52,19 @@ export class ToastService {
 
   toastVm$ = combineLatest([
     this.showToast$,
-    this.toastMessage$,
+    this.toastData$,
     this.countDown$.pipe(startWith(null)),
   ]).pipe(
-    map(([visible, message, countdown]) => ({ visible, message, countdown }))
+    map(([visible, data, countdown]) => ({
+      visible,
+      message: data?.message ?? null,
+      type: data?.type ?? null,
+      countdown,
+    }))
   );
 
-  show(message: string) {
-    this.toastTriggered$.next(message);
+  show(message: string, type: ToastType = 'info') {
+    this.toastTriggered$.next({ message, type });
   }
 
   close() {

@@ -65,6 +65,6 @@ export class AddTask {
       dueDate: '',
     });
 
-    this.toastService.show('Task Created');
+    this.toastService.show('Task Created', 'success');
   }
 }

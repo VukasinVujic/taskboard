@@ -1,5 +1,10 @@
 @if (toastVm$ | async; as vm) { @if(vm.visible){
-<div class="toast">
+<div
+  class="toast"
+  [class.success]="vm.type === 'success'"
+  [class.error]="vm.type === 'error'"
+  [class.info]="vm.type === 'info'"
+>
   {{ vm.message }}
 
   @if( vm.countdown !== null){
