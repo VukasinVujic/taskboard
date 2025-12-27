@@ -7,6 +7,7 @@ import {
   distinctUntilChanged,
   map,
   Observable,
+  shareReplay,
 } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
@@ -48,20 +49,25 @@ export class TaskList {
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
 
-  todo$ = this.getTasksByStatus('todo');
-  inProgress$ = this.getTasksByStatus('in-progress');
-  done$ = this.getTasksByStatus('done');
+  public kanbanVm$ = this.filteredTasks$.pipe(
+    map((tasks) => ({
+      todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
+      inProgress: this.sortByDate(
+        tasks.filter((t) => t.status === 'in-progress')
+      ),
+      done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
+    })),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
 
-  private getTasksByStatus(status: TaskStatus): Observable<Task[]> {
-    return this.filteredTasks$.pipe(
-      map((tasks) =>
-        tasks
-          .filter((t) => t.status === status)
-          .sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          )
-      )
+  todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
+  inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
+  done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
+
+  sortByDate(list: Task[]) {
+    return list.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
   }
 
