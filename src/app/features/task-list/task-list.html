@@ -18,6 +18,11 @@
 
 } }
 
+<input
+  style="margin-top: 10px"
+  type="text"
+  (input)="onSearch($event.target.value)"
+/>
 <div class="kanaban">
   <app-task-column
     title="TODO"

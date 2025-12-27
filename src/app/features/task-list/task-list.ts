@@ -1,6 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { map, Observable } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  Observable,
+} from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -20,6 +27,21 @@ export class TaskList {
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
   public tasks$ = this.taskStore.tasks$;
+  public searchTerm$ = new BehaviorSubject<string>('');
+
+  filteredTasks$ = combineLatest([
+    this.tasks$,
+    this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
+  ]).pipe(
+    map(([tasks, term]) =>
+      term
+        ? tasks.filter((item) =>
+            item.title.toLowerCase().includes(term.toLowerCase())
+          )
+        : tasks
+    )
+  );
+
   public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
@@ -31,7 +53,7 @@ export class TaskList {
   done$ = this.getTasksByStatus('done');
 
   private getTasksByStatus(status: TaskStatus): Observable<Task[]> {
-    return this.tasks$.pipe(
+    return this.filteredTasks$.pipe(
       map((tasks) =>
         tasks
           .filter((t) => t.status === status)
@@ -65,5 +87,9 @@ export class TaskList {
 
   closeToast() {
     this.toastService.close();
+  }
+
+  onSearch(term: string) {
+    this.searchTerm$.next(term);
   }
 }
