@@ -17,12 +17,19 @@
 </div>
 
 } }
+<div style="margin-top: 20px">Search tasks:</div>
+<input type="text" (input)="onSearch($event.target.value)" />
+<select
+  name=""
+  id=""
+  (change)="onStatusFilterChange($any($event.target).value)"
+>
+  <option value="all">All</option>
+  <option value="todo">Todo</option>
+  <option value="in-progress">In Progress</option>
+  <option value="done">Done</option>
+</select>
 
-<input
-  style="margin-top: 10px"
-  type="text"
-  (input)="onSearch($event.target.value)"
-/>
 <div class="kanaban">
   <app-task-column
     title="TODO"

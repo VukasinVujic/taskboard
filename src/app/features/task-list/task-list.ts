@@ -28,18 +28,18 @@ export class TaskList {
 
   public tasks$ = this.taskStore.tasks$;
   public searchTerm$ = new BehaviorSubject<string>('');
+  public statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
 
   filteredTasks$ = combineLatest([
     this.tasks$,
     this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
+    this.statusFilter$,
   ]).pipe(
-    map(([tasks, term]) =>
-      term
-        ? tasks.filter((item) =>
-            item.title.toLowerCase().includes(term.toLowerCase())
-          )
-        : tasks
-    )
+    map(([tasks, term, taskStatus]) => {
+      const filterByTerm = this.filterByTerm(tasks, term);
+      const filterByStatus = this.filterByStatus(filterByTerm, taskStatus);
+      return filterByStatus;
+    })
   );
 
   public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
@@ -91,5 +91,26 @@ export class TaskList {
 
   onSearch(term: string) {
     this.searchTerm$.next(term);
+  }
+
+  onStatusFilterChange(newStats: 'all' | TaskStatus) {
+    this.statusFilter$.next(newStats);
+  }
+
+  private filterByTerm(tasks: Task[], term: string): Task[] {
+    return term
+      ? tasks.filter((item) =>
+          item.title.toLowerCase().includes(term.toLowerCase())
+        )
+      : tasks;
+  }
+
+  private filterByStatus(
+    filteredTasks: Task[],
+    taskStatus: TaskStatus | 'all'
+  ): Task[] {
+    return taskStatus === 'all'
+      ? filteredTasks
+      : filteredTasks.filter((item) => item.status === taskStatus);
   }
 }
