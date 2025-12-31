@@ -2,10 +2,13 @@ import { Injectable } from '@angular/core';
 import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
+  catchError,
+  EMPTY,
   filter,
   map,
   mapTo,
   merge,
+  Observable,
   shareReplay,
   startWith,
   Subject,
@@ -17,6 +20,12 @@ import {
   timer,
 } from 'rxjs';
 
+interface StatusChangeRequest {
+  id: string;
+  oldStatus: TaskStatus;
+  newStatus: TaskStatus;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
   private readonly STORAGE_KEY = 'taskboard_tasks';
@@ -27,6 +36,8 @@ export class TaskStoreService {
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
+
+  statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
   // showing the counter value
   undoCountdown$ = this.deleteTriggered$.pipe(
@@ -63,6 +74,21 @@ export class TaskStoreService {
         tap(() => this.lastDeletedTaskSubject$.next(null))
       )
       .subscribe();
+
+    this.statusChangeRequested$
+      .pipe(
+        tap((request) => console.log('reqeust: ', request)),
+        switchMap((request) =>
+          this.fakeUpdateStatusApi(request).pipe(
+            catchError((error) => {
+              console.error('API error occurred', error);
+              this.rollbackStatus(request);
+              return EMPTY;
+            })
+          )
+        )
+      )
+      .subscribe();
   }
 
   private get snapshot(): Task[] {
@@ -81,6 +107,16 @@ export class TaskStoreService {
 
   updateTaskByStatus(id: string, newStatus: TaskStatus): void {
     const allTasks = [...this.snapshot];
+
+    const oldTask = this.snapshot.find((task) => task.id === id);
+
+    if (!oldTask) return;
+
+    this.statusChangeRequested$.next({
+      id,
+      oldStatus: oldTask.status,
+      newStatus,
+    });
 
     const updated = allTasks.map((t) =>
       t.id === id ? { ...t, status: newStatus } : t
@@ -148,5 +184,26 @@ export class TaskStoreService {
     } catch (e) {
       console.error('Failed to parse tasks from storage', e);
     }
+  }
+
+  private fakeUpdateStatusApi(arg: StatusChangeRequest): Observable<void> {
+    return timer(3000).pipe(
+      map(() => {
+        if (Math.random() > 0.5) {
+          console.log('API SUCCESS');
+        } else {
+          throw new Error('API FAILED');
+        }
+      })
+    );
+  }
+
+  private rollbackStatus(request: StatusChangeRequest): void {
+    const updated = this.snapshot.map((t) =>
+      t.id === request.id ? { ...t, status: request.oldStatus } : t
+    );
+
+    this._tasks$.next(updated);
+    this.persist(updated);
   }
 }
