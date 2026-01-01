@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
@@ -19,6 +19,7 @@ import {
   tap,
   timer,
 } from 'rxjs';
+import { ToastService } from './toast.service';
 
 interface StatusChangeRequest {
   id: string;
@@ -30,6 +31,7 @@ interface StatusChangeRequest {
 export class TaskStoreService {
   private readonly STORAGE_KEY = 'taskboard_tasks';
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
+  private toastService = inject(ToastService);
   lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
 
   readonly tasks$ = this._tasks$.asObservable();
@@ -83,6 +85,10 @@ export class TaskStoreService {
             catchError((error) => {
               console.error('API error occurred', error);
               this.rollbackStatus(request);
+              this.toastService.show(
+                'API error occurred, status change failed',
+                'error'
+              );
               return EMPTY;
             })
           )
