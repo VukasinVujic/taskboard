@@ -33,6 +33,8 @@ export class TaskStoreService {
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
   private toastService = inject(ToastService);
   lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
+  private _updatingTaskIds$ = new BehaviorSubject<Set<string>>(new Set());
+  readonly updatingTaskIds$ = this._updatingTaskIds$.asObservable();
 
   readonly tasks$ = this._tasks$.asObservable();
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
@@ -79,12 +81,14 @@ export class TaskStoreService {
 
     this.statusChangeRequested$
       .pipe(
-        tap((request) => console.log('reqeust: ', request)),
+        tap((request) => this.startUpdating(request.id)),
         switchMap((request) =>
           this.fakeUpdateStatusApi(request).pipe(
+            tap(() => this.stopUpdating(request.id)),
             catchError((error) => {
               console.error('API error occurred', error);
               this.rollbackStatus(request);
+              this.stopUpdating(request.id);
               this.toastService.show(
                 'API error occurred, status change failed',
                 'error'
@@ -211,5 +215,24 @@ export class TaskStoreService {
 
     this._tasks$.next(updated);
     this.persist(updated);
+  }
+
+  private startUpdating(id: string): void {
+    const list = this._updatingTaskIds$.value;
+
+    const nextList = new Set(list);
+    nextList.add(id);
+
+    this._updatingTaskIds$.next(nextList);
+  }
+
+  private stopUpdating(id: string): void {
+    const list = this._updatingTaskIds$.value;
+
+    const nextList = new Set(list);
+
+    nextList.delete(id);
+
+    this._updatingTaskIds$.next(nextList);
   }
 }

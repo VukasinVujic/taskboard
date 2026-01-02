@@ -25,6 +25,7 @@ export class TaskColumn {
   @Input() title = '';
   @Input() tasks$!: Observable<Task[]>;
   @Input() statuses: TaskStatus[] = [];
+  @Input() updatingTaskIds$!: Observable<Set<string>>;
 
   @Output() changeStatus = new EventEmitter<{
     id: string;

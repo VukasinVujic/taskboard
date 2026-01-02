@@ -7,8 +7,12 @@
     <div>Status: {{ task.status }}</div>
     <div class="column-actions">
       @for (status of statuses; track status){
-      <button class="column-btn" (click)="onChangeStatus(task.id, status)">
-        {{ status }}
+      <button
+        class="column-btn"
+        [disabled]="(updatingTaskIds$ | async)?.has(task.id)"
+        (click)="onChangeStatus(task.id, status)"
+      >
+        {{ (updatingTaskIds$ | async)?.has(task.id) ? "Updating ..." : status }}
       </button>
       }
       <button class="column-btn column-del" (click)="onOpenDialog(task.id)">
