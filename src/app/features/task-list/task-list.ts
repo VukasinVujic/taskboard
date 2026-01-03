@@ -27,19 +27,12 @@ export class TaskList {
   protected readonly toastService = inject(ToastService);
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
-  public tasks$ = this.taskStore.tasks$;
-  public searchTerm$ = new BehaviorSubject<string>('');
+  public searchResult$ = this.taskStore.searchResult$;
   public statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
 
-  filteredTasks$ = combineLatest([
-    this.tasks$,
-    this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
-    this.statusFilter$,
-  ]).pipe(
-    map(([tasks, term, taskStatus]) => {
-      const filterByTerm = this.filterByTerm(tasks, term);
-      const filterByStatus = this.filterByStatus(filterByTerm, taskStatus);
-      return filterByStatus;
+  filteredTasks$ = combineLatest([this.searchResult$, this.statusFilter$]).pipe(
+    map(([tasks, taskStatus]) => {
+      return this.filterByStatus(tasks, taskStatus);
     })
   );
 
@@ -97,20 +90,20 @@ export class TaskList {
   }
 
   onSearch(term: string) {
-    this.searchTerm$.next(term);
+    this.taskStore.searchTerm$.next(term);
   }
 
   onStatusFilterChange(newStats: 'all' | TaskStatus) {
     this.statusFilter$.next(newStats);
   }
 
-  private filterByTerm(tasks: Task[], term: string): Task[] {
-    return term
-      ? tasks.filter((item) =>
-          item.title.toLowerCase().includes(term.toLowerCase())
-        )
-      : tasks;
-  }
+  // private filterByTerm(tasks: Task[], term: string): Task[] {
+  //   return term
+  //     ? tasks.filter((item) =>
+  //         item.title.toLowerCase().includes(term.toLowerCase())
+  //       )
+  //     : tasks;
+  // }
 
   private filterByStatus(
     filteredTasks: Task[],

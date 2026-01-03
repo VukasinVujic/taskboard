@@ -3,8 +3,11 @@ import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
   catchError,
+  debounceTime,
+  distinctUntilChanged,
   EMPTY,
   filter,
+  finalize,
   map,
   mapTo,
   merge,
@@ -40,6 +43,8 @@ export class TaskStoreService {
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
+  searchTerm$ = new BehaviorSubject<string>('');
+  searchLoading$ = new BehaviorSubject<boolean>(false);
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
@@ -84,22 +89,46 @@ export class TaskStoreService {
         tap((request) => this.startUpdating(request.id)),
         switchMap((request) =>
           this.fakeUpdateStatusApi(request).pipe(
-            tap(() => this.stopUpdating(request.id)),
             catchError((error) => {
               console.error('API error occurred', error);
               this.rollbackStatus(request);
-              this.stopUpdating(request.id);
               this.toastService.show(
                 'API error occurred, status change failed',
                 'error'
               );
               return EMPTY;
-            })
+            }),
+            finalize(() => this.stopUpdating(request.id))
           )
         )
       )
       .subscribe();
   }
+
+  searchRequest$ = this.searchTerm$.pipe(
+    debounceTime(300),
+    distinctUntilChanged(),
+    map((term) => term.trim())
+  );
+
+  searchResult$ = this.searchRequest$.pipe(
+    switchMap((term) => {
+      if (term.length < 2) {
+        this.searchLoading$.next(false);
+        return this.tasks$;
+      }
+      this.searchLoading$.next(true);
+
+      return this.fakeSearchApi(term).pipe(
+        finalize(() => this.searchLoading$.next(false)),
+        catchError(() => {
+          this.toastService.show('Search failed', 'error');
+          return this.tasks$;
+        })
+      );
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
 
   private get snapshot(): Task[] {
     return this._tasks$.value;
@@ -200,7 +229,6 @@ export class TaskStoreService {
     return timer(3000).pipe(
       map(() => {
         if (Math.random() > 0.5) {
-          console.log('API SUCCESS');
         } else {
           throw new Error('API FAILED');
         }
@@ -234,5 +262,19 @@ export class TaskStoreService {
     nextList.delete(id);
 
     this._updatingTaskIds$.next(nextList);
+  }
+
+  private fakeSearchApi(term: string): Observable<Task[]> {
+    return timer(1000).pipe(
+      map(() => {
+        if (Math.random() > 0.5) {
+          return this.snapshot.filter((task) =>
+            task.title.toLowerCase().includes(term.toLowerCase())
+          );
+        } else {
+          throw new Error('API FAILED');
+        }
+      })
+    );
   }
 }
