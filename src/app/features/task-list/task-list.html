@@ -18,10 +18,11 @@
 
 } }
 <div style="margin-top: 20px">Search tasks:</div>
-<input type="text" (input)="onSearch($event.target.value)" />
+<input type="text" (input)="onSearch($event.target.value)" #searchinput />
 <select
   name=""
   id=""
+  #searchselect
   (change)="onStatusFilterChange($any($event.target).value)"
 >
   <option value="all">All</option>
@@ -39,7 +40,17 @@
   @if(vm.isStatusFiltered){ in status: "{{ vm.taskStatus }}" }
   @if(!vm.isSearchActive) { in All }
 </div>
-} }
+
+@if(vm.canClearSearch){
+<button class="no-tasks-btn" (click)="clearSearch(searchinput)">
+  Clear search
+</button>
+} @if(vm.isStatusFiltered){
+<button class="no-tasks-btn" (click)="resetFilter(searchselect)">
+  Reset Filter
+</button>
+
+} } }
 
 <div class="kanaban">
   <app-task-column

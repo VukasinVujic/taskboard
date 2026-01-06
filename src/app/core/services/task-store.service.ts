@@ -228,7 +228,7 @@ export class TaskStoreService {
   private fakeUpdateStatusApi(arg: StatusChangeRequest): Observable<void> {
     return timer(3000).pipe(
       map(() => {
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.15) {
         } else {
           throw new Error('API FAILED');
         }
@@ -267,7 +267,7 @@ export class TaskStoreService {
   private fakeSearchApi(term: string): Observable<Task[]> {
     return timer(1000).pipe(
       map(() => {
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.15) {
           return this.snapshot.filter((task) =>
             task.title.toLowerCase().includes(term.toLowerCase())
           );

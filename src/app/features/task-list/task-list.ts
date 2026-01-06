@@ -62,11 +62,7 @@ export class TaskList {
       const hasVisible = filteredTasks.length > 0;
       const isSearchActive = term.length >= 2;
       const isStatusFiltered = taskStatus !== 'all';
-
-      console.log('has any:', hasAny);
-      console.log('!hasVisible :', !hasVisible);
-      console.log('isSearchActive :', hasVisible);
-      console.log('**************************');
+      const canClearSearch = term.length > 0;
 
       return {
         showEmptyAll: !hasAny,
@@ -77,6 +73,7 @@ export class TaskList {
         taskStatus,
         isSearchActive,
         isStatusFiltered,
+        canClearSearch,
       };
     })
   );
@@ -120,14 +117,6 @@ export class TaskList {
     this.statusFilter$.next(newStats);
   }
 
-  // private filterByTerm(tasks: Task[], term: string): Task[] {
-  //   return term
-  //     ? tasks.filter((item) =>
-  //         item.title.toLowerCase().includes(term.toLowerCase())
-  //       )
-  //     : tasks;
-  // }
-
   private filterByStatus(
     filteredTasks: Task[],
     taskStatus: TaskStatus | 'all'
@@ -135,5 +124,15 @@ export class TaskList {
     return taskStatus === 'all'
       ? filteredTasks
       : filteredTasks.filter((item) => item.status === taskStatus);
+  }
+
+  clearSearch(searchinput: HTMLInputElement) {
+    searchinput.value = '';
+    this.taskStore.searchTerm$.next('');
+  }
+
+  resetFilter(searchselect: HTMLSelectElement) {
+    searchselect.value = 'all';
+    this.statusFilter$.next('all');
   }
 }
