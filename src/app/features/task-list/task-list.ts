@@ -1,14 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  BehaviorSubject,
-  combineLatest,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  Observable,
-  shareReplay,
-} from 'rxjs';
+import { BehaviorSubject, combineLatest, map, shareReplay } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -57,6 +49,37 @@ export class TaskList {
   todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
   inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
   done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
+
+  emptyVm$ = combineLatest([
+    this.taskStore.tasks$,
+    this.filteredTasks$,
+    this.taskStore.searchTerm$,
+    this.statusFilter$,
+  ]).pipe(
+    map(([allTasks, filteredTasks, searchTerm, taskStatus]) => {
+      const term = searchTerm.trim();
+      const hasAny = allTasks.length > 0;
+      const hasVisible = filteredTasks.length > 0;
+      const isSearchActive = term.length >= 2;
+      const isStatusFiltered = taskStatus !== 'all';
+
+      console.log('has any:', hasAny);
+      console.log('!hasVisible :', !hasVisible);
+      console.log('isSearchActive :', hasVisible);
+      console.log('**************************');
+
+      return {
+        showEmptyAll: !hasAny,
+        showNoResultsForSearch: hasAny && !hasVisible && isSearchActive,
+        showNoResults:
+          hasAny && term && !hasVisible && (isSearchActive || isStatusFiltered),
+        term,
+        taskStatus,
+        isSearchActive,
+        isStatusFiltered,
+      };
+    })
+  );
 
   sortByDate(list: Task[]) {
     return list.sort(

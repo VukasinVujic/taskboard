@@ -30,6 +30,17 @@
   <option value="done">Done</option>
 </select>
 
+@if(emptyVm$ | async; as vm) { @if(vm.showEmptyAll){
+<div class="no-tasks">No task still added ... please add new task</div>
+
+} @if(vm.showNoResults){
+<div class="no-tasks">
+  No results @if(vm.isSearchActive) { for "{{ vm.term }}" }
+  @if(vm.isStatusFiltered){ in status: "{{ vm.taskStatus }}" }
+  @if(!vm.isSearchActive) { in All }
+</div>
+} }
+
 <div class="kanaban">
   <app-task-column
     title="TODO"
