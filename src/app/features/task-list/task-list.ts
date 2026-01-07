@@ -65,15 +65,23 @@ export class TaskList {
       const canClearSearch = term.length > 0;
 
       return {
-        showEmptyAll: !hasAny,
-        showNoResultsForSearch: hasAny && !hasVisible && isSearchActive,
-        showNoResults:
-          hasAny && term && !hasVisible && (isSearchActive || isStatusFiltered),
         term,
         taskStatus,
         isSearchActive,
         isStatusFiltered,
         canClearSearch,
+        kind: this.giveRightKind(
+          hasAny,
+          hasVisible,
+          isSearchActive,
+          isStatusFiltered
+        ),
+        actions: {
+          clearSearch: term.length > 0,
+          resetFilter: taskStatus !== 'all',
+        },
+        details: this.giveDetails(term, taskStatus),
+        title: 'No results',
       };
     })
   );
@@ -134,5 +142,24 @@ export class TaskList {
   resetFilter(searchselect: HTMLSelectElement) {
     searchselect.value = 'all';
     this.statusFilter$.next('all');
+  }
+
+  giveRightKind(
+    hasAny: boolean,
+    hasVisible: boolean,
+    isSearchActive: boolean,
+    isStatusFiltered: boolean
+  ): string {
+    if (!hasAny) return 'empty-all';
+    if (hasAny && !hasVisible && (isSearchActive || isStatusFiltered))
+      return 'no-results';
+    else return 'none';
+  }
+
+  giveDetails(term: string, status: TaskStatus | 'all'): string | void {
+    if (term && status !== 'all') return term + ' in status: ' + status;
+    if (term) return term;
+    if (status !== 'all') return status;
+    return;
   }
 }

@@ -31,21 +31,21 @@
   <option value="done">Done</option>
 </select>
 
-@if(emptyVm$ | async; as vm) { @if(vm.showEmptyAll){
+@if(emptyVm$ | async; as vm) { @if(vm.kind === 'empty-all'){
 <div class="no-tasks">No task still added ... please add new task</div>
 
-} @if(vm.showNoResults){
+} @if(vm.kind === 'no-results'){
 <div class="no-tasks">
-  No results @if(vm.isSearchActive) { for "{{ vm.term }}" }
-  @if(vm.isStatusFiltered){ in status: "{{ vm.taskStatus }}" }
-  @if(!vm.isSearchActive) { in All }
+  {{ vm.title }} @if(vm.isSearchActive) { for "<strong>
+    {{ vm.details }} </strong
+  >" }
 </div>
 
-@if(vm.canClearSearch){
+@if(vm.actions.clearSearch){
 <button class="no-tasks-btn" (click)="clearSearch(searchinput)">
   Clear search
 </button>
-} @if(vm.isStatusFiltered){
+} @if(vm.actions.resetFilter){
 <button class="no-tasks-btn" (click)="resetFilter(searchselect)">
   Reset Filter
 </button>
