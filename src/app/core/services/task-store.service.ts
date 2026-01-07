@@ -12,6 +12,8 @@ import {
   mapTo,
   merge,
   Observable,
+  of,
+  scan,
   shareReplay,
   startWith,
   Subject,
@@ -29,6 +31,17 @@ interface StatusChangeRequest {
   oldStatus: TaskStatus;
   newStatus: TaskStatus;
 }
+
+interface SuccessEvent {
+  type: 'success';
+  tasks: Task[];
+}
+
+interface ErrorEvent {
+  type: 'error';
+}
+
+type SearchEvent = SuccessEvent | ErrorEvent;
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
@@ -111,23 +124,39 @@ export class TaskStoreService {
     map((term) => term.trim())
   );
 
-  searchResult$ = this.searchRequest$.pipe(
+  searchEvents$ = this.searchRequest$.pipe(
     switchMap((term) => {
       if (term.length < 2) {
         this.searchLoading$.next(false);
-        return this.tasks$;
+        return this.tasks$.pipe(
+          map((tasks): SuccessEvent => ({ type: 'success', tasks }))
+        );
       }
       this.searchLoading$.next(true);
 
       return this.fakeSearchApi(term).pipe(
+        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
         finalize(() => this.searchLoading$.next(false)),
         catchError(() => {
           this.toastService.show('Search failed', 'error');
-          return this.tasks$;
+          return of({ type: 'error' } as ErrorEvent);
         })
       );
     }),
     shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  searchResult$ = this.searchEvents$.pipe(
+    scan(
+      (state: { lastGood: Task[] }, event: SearchEvent) => {
+        if (event.type === 'success') {
+          return { lastGood: event.tasks };
+        }
+        return state;
+      },
+      { lastGood: [] }
+    ),
+    map((state) => state.lastGood)
   );
 
   private get snapshot(): Task[] {
@@ -165,7 +194,7 @@ export class TaskStoreService {
     this.persist(updated);
   }
 
-  updateTaskDetails(task: Task) {
+  updateTaskDetails(task: Task): void {
     const allTasks = [...this.snapshot];
 
     const updated = allTasks.map((t) => (t.id === task.id ? task : t));
@@ -186,7 +215,7 @@ export class TaskStoreService {
     this.persist(updated);
   }
 
-  undoDelete() {
+  undoDelete(): void {
     const task = this.lastDelTask;
 
     if (!task) return;
@@ -200,7 +229,7 @@ export class TaskStoreService {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(safe));
   }
 
-  private loadFromStorage() {
+  private loadFromStorage(): void {
     const stored = localStorage.getItem(this.STORAGE_KEY);
 
     if (!stored) return;
