@@ -31,7 +31,10 @@
   <option value="done">Done</option>
 </select>
 
-@if(emptyVm$ | async; as vm) { @if(vm.kind === 'empty-all'){
+@if (searchLoading$ | async; as loading) { @if(loading){
+<div>Loading ...</div>
+
+} } @if(emptyVm$ | async; as vm) { @if(vm.kind === 'empty-all'){
 <div class="no-tasks">No task still added ... please add new task</div>
 
 } @if(vm.kind === 'no-results'){

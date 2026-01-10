@@ -32,6 +32,8 @@ export class TaskList {
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
   public updatingTaskIds$ = this.taskStore.updatingTaskIds$;
+  public searchLoading$ = this.taskStore.searchLoading$;
+
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
 

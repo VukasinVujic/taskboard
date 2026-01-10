@@ -3,6 +3,7 @@ import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
   catchError,
+  concat,
   debounceTime,
   distinctUntilChanged,
   EMPTY,
@@ -41,7 +42,11 @@ interface ErrorEvent {
   type: 'error';
 }
 
-type SearchEvent = SuccessEvent | ErrorEvent;
+interface LoadingEvent {
+  type: 'loading';
+}
+
+type SearchEvent = SuccessEvent | ErrorEvent | LoadingEvent;
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
@@ -57,7 +62,7 @@ export class TaskStoreService {
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
   searchTerm$ = new BehaviorSubject<string>('');
-  searchLoading$ = new BehaviorSubject<boolean>(false);
+  // searchLoading$ = new BehaviorSubject<boolean>(false);
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
@@ -127,21 +132,22 @@ export class TaskStoreService {
   searchEvents$ = this.searchRequest$.pipe(
     switchMap((term) => {
       if (term.length < 2) {
-        this.searchLoading$.next(false);
         return this.tasks$.pipe(
           map((tasks): SuccessEvent => ({ type: 'success', tasks }))
         );
       }
-      this.searchLoading$.next(true);
 
-      return this.fakeSearchApi(term).pipe(
+      const loading$ = of({ type: 'loading' } as const);
+
+      const api$ = this.fakeSearchApi(term).pipe(
         map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        finalize(() => this.searchLoading$.next(false)),
         catchError(() => {
           this.toastService.show('Search failed', 'error');
           return of({ type: 'error' } as ErrorEvent);
         })
       );
+
+      return concat(loading$, api$);
     }),
     shareReplay({ bufferSize: 1, refCount: true })
   );
@@ -156,7 +162,16 @@ export class TaskStoreService {
       },
       { lastGood: [] }
     ),
-    map((state) => state.lastGood)
+    map((state) => state.lastGood),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  searchLoading$ = this.searchEvents$.pipe(
+    map((event: SearchEvent) => {
+      if (event.type === 'loading') return true;
+      return false;
+    }),
+    distinctUntilChanged()
   );
 
   private get snapshot(): Task[] {
