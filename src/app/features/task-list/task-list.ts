@@ -21,8 +21,11 @@ export class TaskList {
 
   public searchResult$ = this.taskStore.searchResult$;
   public statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
+  public taskListVm$ = this.taskStore.taskListVm$;
 
-  filteredTasks$ = combineLatest([this.searchResult$, this.statusFilter$]).pipe(
+  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
+
+  filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
     map(([tasks, taskStatus]) => {
       return this.filterByStatus(tasks, taskStatus);
     })
@@ -32,7 +35,6 @@ export class TaskList {
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
   public updatingTaskIds$ = this.taskStore.updatingTaskIds$;
-  public searchLoading$ = this.taskStore.searchLoading$;
 
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
@@ -52,39 +54,19 @@ export class TaskList {
   inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
   done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
 
-  emptyVm$ = combineLatest([
-    this.taskStore.tasks$,
+  showNoResults$ = combineLatest([
     this.filteredTasks$,
-    this.taskStore.searchTerm$,
     this.statusFilter$,
+    this.taskListVm$,
   ]).pipe(
-    map(([allTasks, filteredTasks, searchTerm, taskStatus]) => {
-      const term = searchTerm.trim();
-      const hasAny = allTasks.length > 0;
-      const hasVisible = filteredTasks.length > 0;
-      const isSearchActive = term.length >= 2;
-      const isStatusFiltered = taskStatus !== 'all';
-      const canClearSearch = term.length > 0;
+    map(([fileredTasks, taskStatus, taskList]) => {
+      const filterEmpty =
+        fileredTasks.length === 0 &&
+        taskStatus !== 'all' &&
+        !taskList.loading &&
+        taskList.trimTerm.length < 2;
 
-      return {
-        term,
-        taskStatus,
-        isSearchActive,
-        isStatusFiltered,
-        canClearSearch,
-        kind: this.giveRightKind(
-          hasAny,
-          hasVisible,
-          isSearchActive,
-          isStatusFiltered
-        ),
-        actions: {
-          clearSearch: term.length > 0,
-          resetFilter: taskStatus !== 'all',
-        },
-        details: this.giveDetails(term, taskStatus),
-        title: 'No results',
-      };
+      return { filterEmpty, taskStatus };
     })
   );
 

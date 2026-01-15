@@ -31,29 +31,31 @@
   <option value="done">Done</option>
 </select>
 
-@if (searchLoading$ | async; as loading) { @if(loading){
-<div>Loading ...</div>
-
-} } @if(emptyVm$ | async; as vm) { @if(vm.kind === 'empty-all'){
+@if(taskListVm$ | async; as vm) { @if(vm.loading){
+<div>Loading...</div>
+} @if(vm.showNoTasksYet) {
 <div class="no-tasks">No task still added ... please add new task</div>
 
-} @if(vm.kind === 'no-results'){
+} @if(vm.showNoResults){
 <div class="no-tasks">
-  {{ vm.title }} @if(vm.isSearchActive) { for "<strong>
-    {{ vm.details }} </strong
-  >" }
+  No results for : "<strong> {{ vm.trimTerm }} </strong>"
 </div>
 
-@if(vm.actions.clearSearch){
+@if(vm.trimTerm.length > 0){
 <button class="no-tasks-btn" (click)="clearSearch(searchinput)">
   Clear search
 </button>
-} @if(vm.actions.resetFilter){
+
+} } } @if(showNoResults$ | async; as filterVm){ @if(filterVm.filterEmpty){ No
+results in :
+
+{{ filterVm.taskStatus }}
+
 <button class="no-tasks-btn" (click)="resetFilter(searchselect)">
   Reset Filter
 </button>
 
-} } }
+} }
 
 <div class="kanaban">
   <app-task-column

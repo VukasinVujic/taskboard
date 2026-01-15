@@ -3,6 +3,7 @@ import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
   catchError,
+  combineLatest,
   concat,
   debounceTime,
   distinctUntilChanged,
@@ -62,7 +63,6 @@ export class TaskStoreService {
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
   searchTerm$ = new BehaviorSubject<string>('');
-  // searchLoading$ = new BehaviorSubject<boolean>(false);
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
@@ -321,4 +321,36 @@ export class TaskStoreService {
       })
     );
   }
+
+  hasAnyTasks$ = this.tasks$.pipe(
+    map((tasks) => tasks.length > 0),
+    distinctUntilChanged()
+  );
+  hasAnyResults$ = this.searchResult$.pipe(
+    map((tasks) => tasks.length > 0),
+    distinctUntilChanged()
+  );
+
+  trimTerm$ = this.searchTerm$.pipe(
+    startWith(''),
+    map((value) => value.trim()),
+    distinctUntilChanged()
+  );
+
+  taskListVm$ = combineLatest([
+    this.searchResult$,
+    this.hasAnyTasks$,
+    this.hasAnyResults$,
+    this.searchLoading$,
+    this.trimTerm$,
+  ]).pipe(
+    map(([items, hasAnyTasks, hasAnyResults, loading, trimTerm]) => {
+      const showNoTasksYet = !hasAnyTasks && !loading && trimTerm.length < 2;
+      const showNoResults =
+        hasAnyTasks && !hasAnyResults && !loading && trimTerm.length >= 2;
+
+      return { items, showNoTasksYet, showNoResults, loading, trimTerm };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
 }
