@@ -443,4 +443,17 @@ export class TaskStoreService {
   todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
   inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
   done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
+
+  undoVm$ = combineLatest([
+    this.showUndo$,
+    this.undoCountdown$,
+    this.lastDeletedTask$,
+  ]).pipe(
+    map(([visible, countdown, task]) => {
+      const text = 'UNDO deleted task ...';
+
+      return { visible, text, countdown, task };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
 }

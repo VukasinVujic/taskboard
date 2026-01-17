@@ -89,12 +89,10 @@ tasks in status :
   />
 </div>
 
-@if(showUndo$ | async) { @if (lastDeletedTask$ | async; as t) {
+@if(undoVm$ | async; as vm){ @if(vm.visible){
 <button (click)="unDoDeletedTask()" class="undo-bar">
-  UNDO deleted task {{ t.title }}
+  {{ vm.text }}
 </button>
 
-} @if(undoCountdown$ | async; as value) {
-
-<div>Undo za {{ value }}</div>
+<div>Undo za {{ vm.countdown }}</div>
 } }

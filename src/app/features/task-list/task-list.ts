@@ -21,11 +21,9 @@ export class TaskList {
 
   public taskListVm$ = this.taskStore.taskListVm$;
 
-  public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
-  public undoCountdown$ = this.taskStore.undoCountdown$;
-  public showUndo$ = this.taskStore.showUndo$;
   public updatingTaskIds$ = this.taskStore.updatingTaskIds$;
   public showNoResults$ = this.taskStore.showNoResults$;
+  public undoVm$ = this.taskStore.undoVm$;
 
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
