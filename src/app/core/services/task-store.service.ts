@@ -419,4 +419,28 @@ export class TaskStoreService {
       ? filteredTasks
       : filteredTasks.filter((item) => item.status === taskStatus);
   }
+
+  sortByDate(list: Task[]) {
+    const newSort = [...list];
+
+    return newSort.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  }
+
+  public kanbanVm$ = this.filteredTasks$.pipe(
+    map((tasks) => ({
+      todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
+      inProgress: this.sortByDate(
+        tasks.filter((t) => t.status === 'in-progress')
+      ),
+      done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
+    })),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
+  inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
+  done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
 }

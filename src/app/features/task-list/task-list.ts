@@ -30,27 +30,9 @@ export class TaskList {
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
 
-  public kanbanVm$ = this.taskStore.filteredTasks$.pipe(
-    map((tasks) => ({
-      todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
-      inProgress: this.sortByDate(
-        tasks.filter((t) => t.status === 'in-progress')
-      ),
-      done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
-    })),
-    shareReplay({ bufferSize: 1, refCount: true })
-  );
-
-  todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
-  inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
-  done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
-
-  sortByDate(list: Task[]) {
-    return list.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-  }
+  todo$ = this.taskStore.todo$;
+  inProgress$ = this.taskStore.inProgress$;
+  done$ = this.taskStore.done$;
 
   onChangeStatus(id: string, status: TaskStatus) {
     this.taskStore.updateTaskByStatus(id, status);
