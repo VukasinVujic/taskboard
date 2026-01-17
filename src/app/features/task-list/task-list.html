@@ -18,11 +18,15 @@
 
 } }
 <div style="margin-top: 20px">Search tasks:</div>
-<input type="text" (input)="onSearch($event.target.value)" #searchinput />
+<input
+  type="text"
+  (input)="onSearch($event.target.value)"
+  [value]="(taskListVm$ | async)?.rawTerm"
+/>
 <select
   name=""
   id=""
-  #searchselect
+  [value]="(taskListVm$ | async)?.taskStatus"
   (change)="onStatusFilterChange($any($event.target).value)"
 >
   <option value="all">All</option>
@@ -42,18 +46,14 @@
 </div>
 
 @if(vm.trimTerm.length > 0){
-<button class="no-tasks-btn" (click)="clearSearch(searchinput)">
-  Clear search
-</button>
+<button class="no-tasks-btn" (click)="clearSearch()">Clear search</button>
 
 } } } @if(showNoResults$ | async; as filterVm){ @if(filterVm.filterEmpty){ No
-results in :
+tasks in status :
 
 {{ filterVm.taskStatus }}
 
-<button class="no-tasks-btn" (click)="resetFilter(searchselect)">
-  Reset Filter
-</button>
+<button class="no-tasks-btn" (click)="resetFilter()">Reset Filter</button>
 
 } }
 

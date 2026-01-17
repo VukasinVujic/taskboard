@@ -19,27 +19,18 @@ export class TaskList {
   protected readonly toastService = inject(ToastService);
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
-  public searchResult$ = this.taskStore.searchResult$;
-  public statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
   public taskListVm$ = this.taskStore.taskListVm$;
-
-  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
-
-  filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
-    map(([tasks, taskStatus]) => {
-      return this.filterByStatus(tasks, taskStatus);
-    })
-  );
 
   public lastDeletedTask$ = this.taskStore.lastDeletedTask$;
   public undoCountdown$ = this.taskStore.undoCountdown$;
   public showUndo$ = this.taskStore.showUndo$;
   public updatingTaskIds$ = this.taskStore.updatingTaskIds$;
+  public showNoResults$ = this.taskStore.showNoResults$;
 
   public showToast$ = this.toastService.showToast$;
   public toastVm$ = this.toastService.toastVm$;
 
-  public kanbanVm$ = this.filteredTasks$.pipe(
+  public kanbanVm$ = this.taskStore.filteredTasks$.pipe(
     map((tasks) => ({
       todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
       inProgress: this.sortByDate(
@@ -53,22 +44,6 @@ export class TaskList {
   todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
   inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
   done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
-
-  showNoResults$ = combineLatest([
-    this.filteredTasks$,
-    this.statusFilter$,
-    this.taskListVm$,
-  ]).pipe(
-    map(([fileredTasks, taskStatus, taskList]) => {
-      const filterEmpty =
-        fileredTasks.length === 0 &&
-        taskStatus !== 'all' &&
-        !taskList.loading &&
-        taskList.trimTerm.length < 2;
-
-      return { filterEmpty, taskStatus };
-    })
-  );
 
   sortByDate(list: Task[]) {
     return list.sort(
@@ -94,7 +69,7 @@ export class TaskList {
   }
 
   showToast() {
-    this.toastService.show('message aaaa adadssdf');
+    this.toastService.show('message toast test');
   }
 
   closeToast() {
@@ -102,48 +77,18 @@ export class TaskList {
   }
 
   onSearch(term: string) {
-    this.taskStore.searchTerm$.next(term);
+    this.taskStore.setSearchTerm(term);
   }
 
   onStatusFilterChange(newStats: 'all' | TaskStatus) {
-    this.statusFilter$.next(newStats);
+    this.taskStore.setStatusFilter(newStats);
   }
 
-  private filterByStatus(
-    filteredTasks: Task[],
-    taskStatus: TaskStatus | 'all'
-  ): Task[] {
-    return taskStatus === 'all'
-      ? filteredTasks
-      : filteredTasks.filter((item) => item.status === taskStatus);
+  clearSearch() {
+    this.taskStore.setSearchTerm('');
   }
 
-  clearSearch(searchinput: HTMLInputElement) {
-    searchinput.value = '';
-    this.taskStore.searchTerm$.next('');
-  }
-
-  resetFilter(searchselect: HTMLSelectElement) {
-    searchselect.value = 'all';
-    this.statusFilter$.next('all');
-  }
-
-  giveRightKind(
-    hasAny: boolean,
-    hasVisible: boolean,
-    isSearchActive: boolean,
-    isStatusFiltered: boolean
-  ): string {
-    if (!hasAny) return 'empty-all';
-    if (hasAny && !hasVisible && (isSearchActive || isStatusFiltered))
-      return 'no-results';
-    else return 'none';
-  }
-
-  giveDetails(term: string, status: TaskStatus | 'all'): string | void {
-    if (term && status !== 'all') return term + ' in status: ' + status;
-    if (term) return term;
-    if (status !== 'all') return status;
-    return;
+  resetFilter() {
+    this.taskStore.setStatusFilter('all');
   }
 }

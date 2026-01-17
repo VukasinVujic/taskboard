@@ -62,7 +62,10 @@ export class TaskStoreService {
   readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
-  searchTerm$ = new BehaviorSubject<string>('');
+  private _searchTerm$ = new BehaviorSubject<string>('');
+  readonly searchTerm$ = this._searchTerm$.asObservable();
+  private _statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
+  readonly statusFilter$ = this._statusFilter$.asObservable();
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
@@ -332,10 +335,11 @@ export class TaskStoreService {
   );
 
   trimTerm$ = this.searchTerm$.pipe(
-    startWith(''),
     map((value) => value.trim()),
     distinctUntilChanged()
   );
+
+  rawTerm$ = this.searchTerm$.pipe(distinctUntilChanged());
 
   taskListVm$ = combineLatest([
     this.searchResult$,
@@ -343,14 +347,76 @@ export class TaskStoreService {
     this.hasAnyResults$,
     this.searchLoading$,
     this.trimTerm$,
+    this.rawTerm$,
+    this.statusFilter$,
   ]).pipe(
-    map(([items, hasAnyTasks, hasAnyResults, loading, trimTerm]) => {
-      const showNoTasksYet = !hasAnyTasks && !loading && trimTerm.length < 2;
-      const showNoResults =
-        hasAnyTasks && !hasAnyResults && !loading && trimTerm.length >= 2;
+    map(
+      ([
+        items,
+        hasAnyTasks,
+        hasAnyResults,
+        loading,
+        trimTerm,
+        rawTerm,
+        taskStatus,
+      ]) => {
+        const showNoTasksYet = !hasAnyTasks && !loading && trimTerm.length < 2;
+        const showNoResults =
+          hasAnyTasks && !hasAnyResults && !loading && trimTerm.length >= 2;
 
-      return { items, showNoTasksYet, showNoResults, loading, trimTerm };
+        return {
+          items,
+          showNoTasksYet,
+          showNoResults,
+          loading,
+          trimTerm,
+          rawTerm,
+          taskStatus,
+        };
+      }
+    ),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
+
+  filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
+    map(([tasks, taskStatus]) => {
+      return this.filterByStatus(tasks, taskStatus);
     }),
     shareReplay({ bufferSize: 1, refCount: true })
   );
+
+  showNoResults$ = combineLatest([
+    this.filteredTasks$,
+    this.statusFilter$,
+    this.taskListVm$,
+  ]).pipe(
+    map(([fileredTasks, taskStatus, taskList]) => {
+      const filterEmpty =
+        fileredTasks.length === 0 &&
+        taskStatus !== 'all' &&
+        !taskList.loading &&
+        taskList.trimTerm.length < 2;
+
+      return { filterEmpty, taskStatus };
+    })
+  );
+
+  public setStatusFilter(newStats: 'all' | TaskStatus): void {
+    this._statusFilter$.next(newStats);
+  }
+
+  public setSearchTerm(term: string): void {
+    this._searchTerm$.next(term);
+  }
+
+  private filterByStatus(
+    filteredTasks: Task[],
+    taskStatus: TaskStatus | 'all'
+  ): Task[] {
+    return taskStatus === 'all'
+      ? filteredTasks
+      : filteredTasks.filter((item) => item.status === taskStatus);
+  }
 }
