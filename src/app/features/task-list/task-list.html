@@ -18,15 +18,18 @@
 
 } }
 <div style="margin-top: 20px">Search tasks:</div>
+
+@if(pageVm$ | async; as pageVm){
+
 <input
   type="text"
   (input)="onSearch($event.target.value)"
-  [value]="(taskListVm$ | async)?.rawTerm"
+  [value]="pageVm.taskList?.rawTerm"
 />
 <select
   name=""
   id=""
-  [value]="(taskListVm$ | async)?.taskStatus"
+  [value]="pageVm.taskList?.taskStatus"
   (change)="onStatusFilterChange($any($event.target).value)"
 >
   <option value="all">All</option>
@@ -35,34 +38,33 @@
   <option value="done">Done</option>
 </select>
 
-@if(taskListVm$ | async; as vm) { @if(vm.loading){
+@if(pageVm.taskList.loading){
 <div>Loading...</div>
-} @if(vm.showNoTasksYet) {
+} @if(pageVm.taskList.showNoTasksYet) {
 <div class="no-tasks">No task still added ... please add new task</div>
 
-} @if(vm.showNoResults){
+} @if(pageVm.taskList.showNoResults){
 <div class="no-tasks">
-  No results for : "<strong> {{ vm.trimTerm }} </strong>"
+  No results for : "<strong> {{ pageVm.taskList.trimTerm }} </strong>"
 </div>
 
-@if(vm.trimTerm.length > 0){
+@if(pageVm.taskList.trimTerm.length > 0){
 <button class="no-tasks-btn" (click)="clearSearch()">Clear search</button>
 
-} } } @if(showNoResults$ | async; as filterVm){ @if(filterVm.filterEmpty){ No
-tasks in status :
+} } @if(pageVm.taskList.showNoResults){ No tasks in status :
 
-{{ filterVm.taskStatus }}
+{{ pageVm.taskList.taskStatus }}
 
 <button class="no-tasks-btn" (click)="resetFilter()">Reset Filter</button>
 
-} }
+}
 
 <div class="kanaban">
   <app-task-column
     title="TODO"
-    [tasks$]="todo$"
+    [tasks]="pageVm.kanban.todo"
     [statuses]="statuses"
-    [updatingTaskIds$]="updatingTaskIds$"
+    [updatingTaskIds]="pageVm.updatingTaskIds"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
     (saveTask)="onUpdateTask($event)"
@@ -70,9 +72,9 @@ tasks in status :
 
   <app-task-column
     title="IN PROGRESS"
-    [tasks$]="inProgress$"
+    [tasks]="pageVm.kanban.inProgress"
     [statuses]="statuses"
-    [updatingTaskIds$]="updatingTaskIds$"
+    [updatingTaskIds]="pageVm.updatingTaskIds"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
     (saveTask)="onUpdateTask($event)"
@@ -80,19 +82,19 @@ tasks in status :
 
   <app-task-column
     title="DONE"
-    [tasks$]="done$"
+    [tasks]="pageVm.kanban.done"
     [statuses]="statuses"
-    [updatingTaskIds$]="updatingTaskIds$"
+    [updatingTaskIds]="pageVm.updatingTaskIds"
     (changeStatus)="onChangeStatus($event.id, $event.status)"
     (deleteTask)="deleteTask($event)"
     (saveTask)="onUpdateTask($event)"
   />
 </div>
 
-@if(undoVm$ | async; as vm){ @if(vm.visible){
+@if(pageVm.undo.visible){
 <button (click)="unDoDeletedTask()" class="undo-bar">
-  {{ vm.text }}
+  {{ pageVm.undo.text }}
 </button>
 
-<div>Undo za {{ vm.countdown }}</div>
+<div>Undo za {{ pageVm.undo.countdown }}</div>
 } }

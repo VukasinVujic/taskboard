@@ -1,6 +1,5 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BehaviorSubject, combineLatest, map, shareReplay } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -31,6 +30,8 @@ export class TaskList {
   todo$ = this.taskStore.todo$;
   inProgress$ = this.taskStore.inProgress$;
   done$ = this.taskStore.done$;
+
+  public pageVm$ = this.taskStore.pageVm$;
 
   onChangeStatus(id: string, status: TaskStatus) {
     this.taskStore.updateTaskByStatus(id, status);

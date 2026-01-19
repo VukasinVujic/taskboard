@@ -23,9 +23,10 @@ import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
 })
 export class TaskColumn {
   @Input() title = '';
-  @Input() tasks$!: Observable<Task[]>;
+  @Input() tasks: Task[] = [];
+
   @Input() statuses: TaskStatus[] = [];
-  @Input() updatingTaskIds$!: Observable<Set<string>>;
+  @Input() updatingTaskIds!: Set<string>;
 
   @Output() changeStatus = new EventEmitter<{
     id: string;

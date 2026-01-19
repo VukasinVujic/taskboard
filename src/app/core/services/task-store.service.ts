@@ -78,6 +78,7 @@ export class TaskStoreService {
         takeUntil(this.undoClicked$)
       )
     ),
+    startWith(null),
     shareReplay({ bufferSize: 1, refCount: true })
   );
 
@@ -453,6 +454,21 @@ export class TaskStoreService {
       const text = 'UNDO deleted task ...';
 
       return { visible, text, countdown, task };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  pageVm$ = combineLatest([
+    this.taskListVm$,
+    this.showNoResults$,
+    this.kanbanVm$,
+    this.undoVm$,
+    this.updatingTaskIds$,
+  ]).pipe(
+    map(([taskList, showNoResults, kanban, undo, updatingTaskIds]) => {
+      const filterEmpty = showNoResults.filterEmpty;
+
+      return { taskList, filterEmpty, kanban, undo, updatingTaskIds };
     }),
     shareReplay({ bufferSize: 1, refCount: true })
   );
