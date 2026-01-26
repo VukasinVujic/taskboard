@@ -69,17 +69,22 @@ export class TaskStoreService {
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
 
+  taskboard_ui_prefs = {
+    searchTerm: this._searchTerm$.value,
+    statusFilterInt: this._statusFilter$.value,
+  };
+
   // showing the counter value
   undoCountdown$ = this.deleteTriggered$.pipe(
     switchMap(() =>
       timer(0, 1000).pipe(
         map((tick) => 10 - tick),
         takeWhile((value) => value >= 0),
-        takeUntil(this.undoClicked$)
-      )
+        takeUntil(this.undoClicked$),
+      ),
     ),
     startWith(null),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   // only to show/hide undo container
@@ -88,21 +93,23 @@ export class TaskStoreService {
     this.undoClicked$.pipe(mapTo(false)),
     this.undoCountdown$.pipe(
       filter((v) => v === 0),
-      mapTo(false)
-    )
+      mapTo(false),
+    ),
   ).pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }));
 
   constructor() {
     this.loadFromStorage();
+    this.loadFromStorageSearchInput();
+    this.persistUiPrefs$.subscribe();
     this.deleteTriggered$
       .pipe(
         switchMap(() =>
           merge(
             this.undoClicked$,
-            this.undoCountdown$.pipe(filter((v) => v === 0))
-          ).pipe(take(1))
+            this.undoCountdown$.pipe(filter((v) => v === 0)),
+          ).pipe(take(1)),
         ),
-        tap(() => this.lastDeletedTaskSubject$.next(null))
+        tap(() => this.lastDeletedTaskSubject$.next(null)),
       )
       .subscribe();
 
@@ -116,28 +123,40 @@ export class TaskStoreService {
               this.rollbackStatus(request);
               this.toastService.show(
                 'API error occurred, status change failed',
-                'error'
+                'error',
               );
               return EMPTY;
             }),
-            finalize(() => this.stopUpdating(request.id))
-          )
-        )
+            finalize(() => this.stopUpdating(request.id)),
+          ),
+        ),
       )
       .subscribe();
   }
 
+  private persistUiPrefs$ = combineLatest([
+    this.searchTerm$,
+    this.statusFilter$,
+  ]).pipe(
+    map(([searchTerm, filter]) => {
+      return JSON.stringify({ searchTerm, filter });
+    }),
+    debounceTime(300),
+    distinctUntilChanged(),
+    tap((jsonString) => localStorage.setItem('searchFilter', jsonString)),
+  );
+
   searchRequest$ = this.searchTerm$.pipe(
     debounceTime(300),
     distinctUntilChanged(),
-    map((term) => term.trim())
+    map((term) => term.trim()),
   );
 
   searchEvents$ = this.searchRequest$.pipe(
     switchMap((term) => {
       if (term.length < 2) {
         return this.tasks$.pipe(
-          map((tasks): SuccessEvent => ({ type: 'success', tasks }))
+          map((tasks): SuccessEvent => ({ type: 'success', tasks })),
         );
       }
 
@@ -148,12 +167,12 @@ export class TaskStoreService {
         catchError(() => {
           this.toastService.show('Search failed', 'error');
           return of({ type: 'error' } as ErrorEvent);
-        })
+        }),
       );
 
       return concat(loading$, api$);
     }),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   searchResult$ = this.searchEvents$.pipe(
@@ -164,10 +183,10 @@ export class TaskStoreService {
         }
         return state;
       },
-      { lastGood: [] }
+      { lastGood: [] },
     ),
     map((state) => state.lastGood),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   searchLoading$ = this.searchEvents$.pipe(
@@ -175,7 +194,7 @@ export class TaskStoreService {
       if (event.type === 'loading') return true;
       return false;
     }),
-    distinctUntilChanged()
+    distinctUntilChanged(),
   );
 
   private get snapshot(): Task[] {
@@ -206,7 +225,7 @@ export class TaskStoreService {
     });
 
     const updated = allTasks.map((t) =>
-      t.id === id ? { ...t, status: newStatus } : t
+      t.id === id ? { ...t, status: newStatus } : t,
     );
 
     this._tasks$.next(updated);
@@ -273,6 +292,28 @@ export class TaskStoreService {
     }
   }
 
+  private loadFromStorageSearchInput() {
+    const storedSearchInput = localStorage.getItem('searchTerm');
+    const storedStatusFilter = localStorage.getItem('statusFilter');
+    const statusKeyWords = ['all', 'todo', 'in-progress', 'done'];
+
+    try {
+      if (storedSearchInput) {
+        const rawSearch = JSON.parse(storedSearchInput);
+        this._searchTerm$.next(rawSearch);
+      }
+
+      if (storedStatusFilter) {
+        const rawStatus = JSON.parse(storedStatusFilter);
+        if (statusKeyWords.includes(rawStatus)) {
+          this._statusFilter$.next(rawStatus);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse tasks from storage', e);
+    }
+  }
+
   private fakeUpdateStatusApi(arg: StatusChangeRequest): Observable<void> {
     return timer(3000).pipe(
       map(() => {
@@ -280,13 +321,13 @@ export class TaskStoreService {
         } else {
           throw new Error('API FAILED');
         }
-      })
+      }),
     );
   }
 
   private rollbackStatus(request: StatusChangeRequest): void {
     const updated = this.snapshot.map((t) =>
-      t.id === request.id ? { ...t, status: request.oldStatus } : t
+      t.id === request.id ? { ...t, status: request.oldStatus } : t,
     );
 
     this._tasks$.next(updated);
@@ -317,27 +358,27 @@ export class TaskStoreService {
       map(() => {
         if (Math.random() > 0.15) {
           return this.snapshot.filter((task) =>
-            task.title.toLowerCase().includes(term.toLowerCase())
+            task.title.toLowerCase().includes(term.toLowerCase()),
           );
         } else {
           throw new Error('API FAILED');
         }
-      })
+      }),
     );
   }
 
   hasAnyTasks$ = this.tasks$.pipe(
     map((tasks) => tasks.length > 0),
-    distinctUntilChanged()
+    distinctUntilChanged(),
   );
   hasAnyResults$ = this.searchResult$.pipe(
     map((tasks) => tasks.length > 0),
-    distinctUntilChanged()
+    distinctUntilChanged(),
   );
 
   trimTerm$ = this.searchTerm$.pipe(
     map((value) => value.trim()),
-    distinctUntilChanged()
+    distinctUntilChanged(),
   );
 
   rawTerm$ = this.searchTerm$.pipe(distinctUntilChanged());
@@ -374,9 +415,9 @@ export class TaskStoreService {
           rawTerm,
           taskStatus,
         };
-      }
+      },
     ),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
@@ -385,7 +426,7 @@ export class TaskStoreService {
     map(([tasks, taskStatus]) => {
       return this.filterByStatus(tasks, taskStatus);
     }),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   showNoResults$ = combineLatest([
@@ -401,7 +442,7 @@ export class TaskStoreService {
         taskList.trimTerm.length < 2;
 
       return { filterEmpty, taskStatus };
-    })
+    }),
   );
 
   public setStatusFilter(newStats: 'all' | TaskStatus): void {
@@ -414,7 +455,7 @@ export class TaskStoreService {
 
   private filterByStatus(
     filteredTasks: Task[],
-    taskStatus: TaskStatus | 'all'
+    taskStatus: TaskStatus | 'all',
   ): Task[] {
     return taskStatus === 'all'
       ? filteredTasks
@@ -426,7 +467,7 @@ export class TaskStoreService {
 
     return newSort.sort(
       (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
   }
 
@@ -434,11 +475,11 @@ export class TaskStoreService {
     map((tasks) => ({
       todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
       inProgress: this.sortByDate(
-        tasks.filter((t) => t.status === 'in-progress')
+        tasks.filter((t) => t.status === 'in-progress'),
       ),
       done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
     })),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
@@ -455,7 +496,7 @@ export class TaskStoreService {
 
       return { visible, text, countdown, task };
     }),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   pageVm$ = combineLatest([
@@ -470,6 +511,6 @@ export class TaskStoreService {
 
       return { taskList, filterEmpty, kanban, undo, updatingTaskIds };
     }),
-    shareReplay({ bufferSize: 1, refCount: true })
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 }

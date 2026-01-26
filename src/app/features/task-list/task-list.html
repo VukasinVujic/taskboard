@@ -24,12 +24,12 @@
 <input
   type="text"
   (input)="onSearch($event.target.value)"
-  [value]="pageVm.taskList?.rawTerm"
+  [value]="pageVm.taskList.rawTerm"
 />
 <select
   name=""
   id=""
-  [value]="pageVm.taskList?.taskStatus"
+  [value]="pageVm.taskList.taskStatus"
   (change)="onStatusFilterChange($any($event.target).value)"
 >
   <option value="all">All</option>
