@@ -53,51 +53,24 @@ type SearchEvent = SuccessEvent | ErrorEvent | LoadingEvent;
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
   private readonly STORAGE_KEY = 'taskboard_tasks';
-  private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
-  private toastService = inject(ToastService);
-  lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
-  private _updatingTaskIds$ = new BehaviorSubject<Set<string>>(new Set());
-  readonly updatingTaskIds$ = this._updatingTaskIds$.asObservable();
+  private readonly toastService = inject(ToastService);
 
-  readonly tasks$ = this._tasks$.asObservable();
-  readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
+  private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
+  private _searchTerm$ = new BehaviorSubject<string>('');
+  private _statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
+  private _updatingTaskIds$ = new BehaviorSubject<Set<string>>(new Set());
+
+  lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
   deleteTriggered$ = new Subject<void>();
   undoClicked$ = new Subject<void>();
-  private _searchTerm$ = new BehaviorSubject<string>('');
-  readonly searchTerm$ = this._searchTerm$.asObservable();
-  private _statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
-  readonly statusFilter$ = this._statusFilter$.asObservable();
-
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
   retryClicked$ = new Subject<void>();
 
-  taskboard_ui_prefs = {
-    searchTerm: this._searchTerm$.value,
-    statusFilterInt: this._statusFilter$.value,
-  };
-
-  // showing the counter value
-  undoCountdown$ = this.deleteTriggered$.pipe(
-    switchMap(() =>
-      timer(0, 1000).pipe(
-        map((tick) => 10 - tick),
-        takeWhile((value) => value >= 0),
-        takeUntil(this.undoClicked$),
-      ),
-    ),
-    startWith(null),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  // only to show/hide undo container
-  showUndo$ = merge(
-    this.deleteTriggered$.pipe(mapTo(true)),
-    this.undoClicked$.pipe(mapTo(false)),
-    this.undoCountdown$.pipe(
-      filter((v) => v === 0),
-      mapTo(false),
-    ),
-  ).pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }));
+  readonly tasks$ = this._tasks$.asObservable();
+  readonly searchTerm$ = this._searchTerm$.asObservable();
+  readonly statusFilter$ = this._statusFilter$.asObservable();
+  readonly updatingTaskIds$ = this._updatingTaskIds$.asObservable();
+  readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
 
   constructor() {
     this.loadFromStorage();
@@ -136,6 +109,229 @@ export class TaskStoreService {
       .subscribe();
   }
 
+  searchRequest$ = this.searchTerm$.pipe(
+    debounceTime(300),
+    distinctUntilChanged(),
+    map((term) => term.trim()),
+  );
+
+  retryTerm$ = this.retryClicked$.pipe(
+    withLatestFrom(this.searchRequest$),
+    map(([_, term]) => {
+      return term;
+    }),
+    filter((term) => term.length >= 2),
+  );
+
+  searchTrigger$ = merge(this.searchRequest$, this.retryTerm$);
+
+  searchEvents$ = this.searchTrigger$.pipe(
+    switchMap((term) => {
+      if (term.length < 2) {
+        return this.tasks$.pipe(
+          map((tasks): SuccessEvent => ({ type: 'success', tasks })),
+        );
+      }
+
+      const loading$ = of({ type: 'loading' } as const);
+
+      const api$ = this.fakeSearchApi(term).pipe(
+        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
+        catchError(() => {
+          this.toastService.show('Search failed', 'error');
+          return of({ type: 'error' } as ErrorEvent);
+        }),
+      );
+
+      return concat(loading$, api$);
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  searchResult$ = this.searchEvents$.pipe(
+    scan(
+      (state: { lastGood: Task[] }, event: SearchEvent) => {
+        if (event.type === 'success') {
+          return { lastGood: event.tasks };
+        }
+        return state;
+      },
+      { lastGood: [] },
+    ),
+    map((state) => state.lastGood),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  searchLoading$ = this.searchEvents$.pipe(
+    map((event: SearchEvent) => {
+      if (event.type === 'loading') return true;
+      return false;
+    }),
+    distinctUntilChanged(),
+  );
+
+  searchError$ = this.searchEvents$.pipe(
+    map((event: SearchEvent) => {
+      if (event.type === 'error') return true;
+      if (event.type === 'loading') return false;
+      if (event.type === 'success') return false;
+      return false;
+    }),
+    distinctUntilChanged(),
+  );
+
+  hasAnyResults$ = this.searchResult$.pipe(
+    map((tasks) => tasks.length > 0),
+    distinctUntilChanged(),
+  );
+
+  hasAnyTasks$ = this.tasks$.pipe(
+    map((tasks) => tasks.length > 0),
+    distinctUntilChanged(),
+  );
+
+  trimTerm$ = this.searchTerm$.pipe(
+    map((value) => value.trim()),
+    distinctUntilChanged(),
+  );
+
+  rawTerm$ = this.searchTerm$.pipe(distinctUntilChanged());
+
+  taskListVm$ = combineLatest([
+    this.searchResult$,
+    this.hasAnyTasks$,
+    this.hasAnyResults$,
+    this.searchLoading$,
+    this.trimTerm$,
+    this.rawTerm$,
+    this.statusFilter$,
+    this.searchError$,
+  ]).pipe(
+    map(
+      ([
+        items,
+        hasAnyTasks,
+        hasAnyResults,
+        loading,
+        trimTerm,
+        rawTerm,
+        taskStatus,
+        hasError,
+      ]) => {
+        const showNoTasksYet =
+          !hasAnyTasks && !loading && trimTerm.length < 2 && !hasError;
+        const showNoResults =
+          hasAnyTasks &&
+          !hasAnyResults &&
+          !loading &&
+          trimTerm.length >= 2 &&
+          !hasError;
+
+        return {
+          items,
+          showNoTasksYet,
+          showNoResults,
+          loading,
+          trimTerm,
+          rawTerm,
+          taskStatus,
+          hasError,
+        };
+      },
+    ),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
+
+  filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
+    map(([tasks, taskStatus]) => {
+      return this.filterByStatus(tasks, taskStatus);
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  public kanbanVm$ = this.filteredTasks$.pipe(
+    map((tasks) => ({
+      todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
+      inProgress: this.sortByDate(
+        tasks.filter((t) => t.status === 'in-progress'),
+      ),
+      done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
+    })),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+  // showing the counter value
+  undoCountdown$ = this.deleteTriggered$.pipe(
+    switchMap(() =>
+      timer(0, 1000).pipe(
+        map((tick) => 10 - tick),
+        takeWhile((value) => value >= 0),
+        takeUntil(this.undoClicked$),
+      ),
+    ),
+    startWith(null),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  // only to show/hide undo container
+  showUndo$ = merge(
+    this.deleteTriggered$.pipe(mapTo(true)),
+    this.undoClicked$.pipe(mapTo(false)),
+    this.undoCountdown$.pipe(
+      filter((v) => v === 0),
+      mapTo(false),
+    ),
+  ).pipe(startWith(false), shareReplay({ bufferSize: 1, refCount: true }));
+
+  todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
+  inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
+  done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
+
+  undoVm$ = combineLatest([
+    this.showUndo$,
+    this.undoCountdown$,
+    this.lastDeletedTask$,
+  ]).pipe(
+    map(([visible, countdown, task]) => {
+      const text = 'UNDO deleted task ...';
+
+      return { visible, text, countdown, task };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  showNoResults$ = combineLatest([
+    this.filteredTasks$,
+    this.statusFilter$,
+    this.taskListVm$,
+  ]).pipe(
+    map(([fileredTasks, taskStatus, taskList]) => {
+      const filterEmpty =
+        fileredTasks.length === 0 &&
+        taskStatus !== 'all' &&
+        !taskList.loading &&
+        taskList.trimTerm.length < 2;
+
+      return { filterEmpty, taskStatus };
+    }),
+  );
+
+  pageVm$ = combineLatest([
+    this.taskListVm$,
+    this.showNoResults$,
+    this.kanbanVm$,
+    this.undoVm$,
+    this.updatingTaskIds$,
+  ]).pipe(
+    map(([taskList, showNoResults, kanban, undo, updatingTaskIds]) => {
+      const filterEmpty = showNoResults.filterEmpty;
+
+      return { taskList, filterEmpty, kanban, undo, updatingTaskIds };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
   private persistUiPrefs$ = combineLatest([
     this.searchTerm$,
     this.statusFilter$,
@@ -148,22 +344,63 @@ export class TaskStoreService {
     tap((jsonString) => localStorage.setItem('searchFilter', jsonString)),
   );
 
-  searchRequest$ = this.searchTerm$.pipe(
-    debounceTime(300),
-    distinctUntilChanged(),
-    map((term) => term.trim()),
-  );
+  private loadFromStorage(): void {
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+
+    if (!stored) return;
+
+    try {
+      const raw = JSON.parse(stored) as unknown[];
+
+      const tasks = raw.filter((t): t is Task => {
+        return (
+          !!t &&
+          typeof t === 'object' &&
+          'id' in t &&
+          'title' in t &&
+          'status' in t &&
+          'createdAt' in t
+        );
+      });
+
+      this._tasks$.next(tasks);
+    } catch (e) {
+      console.error('Failed to parse tasks from storage', e);
+    }
+  }
+
+  private loadFromStorageSearchInput() {
+    const storedSearchInput = localStorage.getItem('searchTerm');
+    const storedStatusFilter = localStorage.getItem('statusFilter');
+    const statusKeyWords = ['all', 'todo', 'in-progress', 'done'];
+
+    try {
+      if (storedSearchInput) {
+        const rawSearch = JSON.parse(storedSearchInput);
+        this._searchTerm$.next(rawSearch);
+      }
+
+      if (storedStatusFilter) {
+        const rawStatus = JSON.parse(storedStatusFilter);
+        if (statusKeyWords.includes(rawStatus)) {
+          this._statusFilter$.next(rawStatus);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse tasks from storage', e);
+    }
+  }
+
+  public setStatusFilter(newStats: 'all' | TaskStatus): void {
+    this._statusFilter$.next(newStats);
+  }
+
+  public setSearchTerm(term: string): void {
+    this._searchTerm$.next(term);
+  }
 
   public retrySearch() {
     this.retryClicked$.next();
-  }
-
-  private get snapshot(): Task[] {
-    return this._tasks$.value;
-  }
-
-  private get lastDelTask(): Task | null {
-    return this.lastDeletedTaskSubject$.value;
   }
 
   addTask(task: Task): void {
@@ -223,56 +460,37 @@ export class TaskStoreService {
     this.undoClicked$.next();
   }
 
+  sortByDate(list: Task[]) {
+    const newSort = [...list];
+
+    return newSort.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  }
+
+  // ******************************************************
+
+  private filterByStatus(
+    filteredTasks: Task[],
+    taskStatus: TaskStatus | 'all',
+  ): Task[] {
+    return taskStatus === 'all'
+      ? filteredTasks
+      : filteredTasks.filter((item) => item.status === taskStatus);
+  }
+
   private persist(tasks: Task[]): void {
     const safe = tasks.filter(Boolean);
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(safe));
   }
 
-  private loadFromStorage(): void {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-
-    if (!stored) return;
-
-    try {
-      const raw = JSON.parse(stored) as unknown[];
-
-      const tasks = raw.filter((t): t is Task => {
-        return (
-          !!t &&
-          typeof t === 'object' &&
-          'id' in t &&
-          'title' in t &&
-          'status' in t &&
-          'createdAt' in t
-        );
-      });
-
-      this._tasks$.next(tasks);
-    } catch (e) {
-      console.error('Failed to parse tasks from storage', e);
-    }
+  private get snapshot(): Task[] {
+    return this._tasks$.value;
   }
 
-  private loadFromStorageSearchInput() {
-    const storedSearchInput = localStorage.getItem('searchTerm');
-    const storedStatusFilter = localStorage.getItem('statusFilter');
-    const statusKeyWords = ['all', 'todo', 'in-progress', 'done'];
-
-    try {
-      if (storedSearchInput) {
-        const rawSearch = JSON.parse(storedSearchInput);
-        this._searchTerm$.next(rawSearch);
-      }
-
-      if (storedStatusFilter) {
-        const rawStatus = JSON.parse(storedStatusFilter);
-        if (statusKeyWords.includes(rawStatus)) {
-          this._statusFilter$.next(rawStatus);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse tasks from storage', e);
-    }
+  private get lastDelTask(): Task | null {
+    return this.lastDeletedTaskSubject$.value;
   }
 
   private fakeUpdateStatusApi(arg: StatusChangeRequest): Observable<void> {
@@ -327,224 +545,4 @@ export class TaskStoreService {
       }),
     );
   }
-
-  hasAnyTasks$ = this.tasks$.pipe(
-    map((tasks) => tasks.length > 0),
-    distinctUntilChanged(),
-  );
-
-  trimTerm$ = this.searchTerm$.pipe(
-    map((value) => value.trim()),
-    distinctUntilChanged(),
-  );
-
-  rawTerm$ = this.searchTerm$.pipe(distinctUntilChanged());
-
-  retryTerm$ = this.retryClicked$.pipe(
-    withLatestFrom(this.searchRequest$),
-    map(([_, term]) => {
-      return term;
-    }),
-    filter((term) => term.length >= 2),
-  );
-
-  searchTrigger$ = merge(this.searchRequest$, this.retryTerm$);
-
-  searchEvents$ = this.searchTrigger$.pipe(
-    switchMap((term) => {
-      if (term.length < 2) {
-        return this.tasks$.pipe(
-          map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        );
-      }
-
-      const loading$ = of({ type: 'loading' } as const);
-
-      const api$ = this.fakeSearchApi(term).pipe(
-        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        catchError(() => {
-          this.toastService.show('Search failed', 'error');
-          return of({ type: 'error' } as ErrorEvent);
-        }),
-      );
-
-      return concat(loading$, api$);
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  searchLoading$ = this.searchEvents$.pipe(
-    map((event: SearchEvent) => {
-      if (event.type === 'loading') return true;
-      return false;
-    }),
-    distinctUntilChanged(),
-  );
-
-  searchError$ = this.searchEvents$.pipe(
-    map((event: SearchEvent) => {
-      if (event.type === 'error') return true;
-      if (event.type === 'loading') return false;
-      if (event.type === 'success') return false;
-      return false;
-    }),
-    distinctUntilChanged(),
-  );
-
-  searchResult$ = this.searchEvents$.pipe(
-    scan(
-      (state: { lastGood: Task[] }, event: SearchEvent) => {
-        if (event.type === 'success') {
-          return { lastGood: event.tasks };
-        }
-        return state;
-      },
-      { lastGood: [] },
-    ),
-    map((state) => state.lastGood),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-  hasAnyResults$ = this.searchResult$.pipe(
-    map((tasks) => tasks.length > 0),
-    distinctUntilChanged(),
-  );
-
-  taskListVm$ = combineLatest([
-    this.searchResult$,
-    this.hasAnyTasks$,
-    this.hasAnyResults$,
-    this.searchLoading$,
-    this.trimTerm$,
-    this.rawTerm$,
-    this.statusFilter$,
-    this.searchError$,
-  ]).pipe(
-    map(
-      ([
-        items,
-        hasAnyTasks,
-        hasAnyResults,
-        loading,
-        trimTerm,
-        rawTerm,
-        taskStatus,
-        hasError,
-      ]) => {
-        const showNoTasksYet =
-          !hasAnyTasks && !loading && trimTerm.length < 2 && !hasError;
-        const showNoResults =
-          hasAnyTasks &&
-          !hasAnyResults &&
-          !loading &&
-          trimTerm.length >= 2 &&
-          !hasError;
-
-        return {
-          items,
-          showNoTasksYet,
-          showNoResults,
-          loading,
-          trimTerm,
-          rawTerm,
-          taskStatus,
-          hasError,
-        };
-      },
-    ),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
-
-  filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
-    map(([tasks, taskStatus]) => {
-      return this.filterByStatus(tasks, taskStatus);
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  showNoResults$ = combineLatest([
-    this.filteredTasks$,
-    this.statusFilter$,
-    this.taskListVm$,
-  ]).pipe(
-    map(([fileredTasks, taskStatus, taskList]) => {
-      const filterEmpty =
-        fileredTasks.length === 0 &&
-        taskStatus !== 'all' &&
-        !taskList.loading &&
-        taskList.trimTerm.length < 2;
-
-      return { filterEmpty, taskStatus };
-    }),
-  );
-
-  public setStatusFilter(newStats: 'all' | TaskStatus): void {
-    this._statusFilter$.next(newStats);
-  }
-
-  public setSearchTerm(term: string): void {
-    this._searchTerm$.next(term);
-  }
-
-  private filterByStatus(
-    filteredTasks: Task[],
-    taskStatus: TaskStatus | 'all',
-  ): Task[] {
-    return taskStatus === 'all'
-      ? filteredTasks
-      : filteredTasks.filter((item) => item.status === taskStatus);
-  }
-
-  sortByDate(list: Task[]) {
-    const newSort = [...list];
-
-    return newSort.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
-  }
-
-  public kanbanVm$ = this.filteredTasks$.pipe(
-    map((tasks) => ({
-      todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
-      inProgress: this.sortByDate(
-        tasks.filter((t) => t.status === 'in-progress'),
-      ),
-      done: this.sortByDate(tasks.filter((t) => t.status === 'done')),
-    })),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  todo$ = this.kanbanVm$.pipe(map((vm) => vm.todo));
-  inProgress$ = this.kanbanVm$.pipe(map((vm) => vm.inProgress));
-  done$ = this.kanbanVm$.pipe(map((vm) => vm.done));
-
-  undoVm$ = combineLatest([
-    this.showUndo$,
-    this.undoCountdown$,
-    this.lastDeletedTask$,
-  ]).pipe(
-    map(([visible, countdown, task]) => {
-      const text = 'UNDO deleted task ...';
-
-      return { visible, text, countdown, task };
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  pageVm$ = combineLatest([
-    this.taskListVm$,
-    this.showNoResults$,
-    this.kanbanVm$,
-    this.undoVm$,
-    this.updatingTaskIds$,
-  ]).pipe(
-    map(([taskList, showNoResults, kanban, undo, updatingTaskIds]) => {
-      const filterEmpty = showNoResults.filterEmpty;
-
-      return { taskList, filterEmpty, kanban, undo, updatingTaskIds };
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
 }
