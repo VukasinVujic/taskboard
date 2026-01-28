@@ -72,4 +72,8 @@ export class TaskList {
   resetFilter() {
     this.taskStore.setStatusFilter('all');
   }
+
+  retrySearch() {
+    this.taskStore.retrySearch();
+  }
 }

@@ -25,6 +25,7 @@ import {
   takeWhile,
   tap,
   timer,
+  withLatestFrom,
 } from 'rxjs';
 import { ToastService } from './toast.service';
 
@@ -68,6 +69,7 @@ export class TaskStoreService {
   readonly statusFilter$ = this._statusFilter$.asObservable();
 
   statusChangeRequested$ = new Subject<StatusChangeRequest>();
+  retryClicked$ = new Subject<void>();
 
   taskboard_ui_prefs = {
     searchTerm: this._searchTerm$.value,
@@ -152,50 +154,9 @@ export class TaskStoreService {
     map((term) => term.trim()),
   );
 
-  searchEvents$ = this.searchRequest$.pipe(
-    switchMap((term) => {
-      if (term.length < 2) {
-        return this.tasks$.pipe(
-          map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        );
-      }
-
-      const loading$ = of({ type: 'loading' } as const);
-
-      const api$ = this.fakeSearchApi(term).pipe(
-        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        catchError(() => {
-          this.toastService.show('Search failed', 'error');
-          return of({ type: 'error' } as ErrorEvent);
-        }),
-      );
-
-      return concat(loading$, api$);
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  searchResult$ = this.searchEvents$.pipe(
-    scan(
-      (state: { lastGood: Task[] }, event: SearchEvent) => {
-        if (event.type === 'success') {
-          return { lastGood: event.tasks };
-        }
-        return state;
-      },
-      { lastGood: [] },
-    ),
-    map((state) => state.lastGood),
-    shareReplay({ bufferSize: 1, refCount: true }),
-  );
-
-  searchLoading$ = this.searchEvents$.pipe(
-    map((event: SearchEvent) => {
-      if (event.type === 'loading') return true;
-      return false;
-    }),
-    distinctUntilChanged(),
-  );
+  public retrySearch() {
+    this.retryClicked$.next();
+  }
 
   private get snapshot(): Task[] {
     return this._tasks$.value;
@@ -371,10 +332,6 @@ export class TaskStoreService {
     map((tasks) => tasks.length > 0),
     distinctUntilChanged(),
   );
-  hasAnyResults$ = this.searchResult$.pipe(
-    map((tasks) => tasks.length > 0),
-    distinctUntilChanged(),
-  );
 
   trimTerm$ = this.searchTerm$.pipe(
     map((value) => value.trim()),
@@ -382,6 +339,75 @@ export class TaskStoreService {
   );
 
   rawTerm$ = this.searchTerm$.pipe(distinctUntilChanged());
+
+  retryTerm$ = this.retryClicked$.pipe(
+    withLatestFrom(this.searchRequest$),
+    map(([_, term]) => {
+      return term;
+    }),
+    filter((term) => term.length >= 2),
+  );
+
+  searchTrigger$ = merge(this.searchRequest$, this.retryTerm$);
+
+  searchEvents$ = this.searchTrigger$.pipe(
+    switchMap((term) => {
+      if (term.length < 2) {
+        return this.tasks$.pipe(
+          map((tasks): SuccessEvent => ({ type: 'success', tasks })),
+        );
+      }
+
+      const loading$ = of({ type: 'loading' } as const);
+
+      const api$ = this.fakeSearchApi(term).pipe(
+        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
+        catchError(() => {
+          this.toastService.show('Search failed', 'error');
+          return of({ type: 'error' } as ErrorEvent);
+        }),
+      );
+
+      return concat(loading$, api$);
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  searchLoading$ = this.searchEvents$.pipe(
+    map((event: SearchEvent) => {
+      if (event.type === 'loading') return true;
+      return false;
+    }),
+    distinctUntilChanged(),
+  );
+
+  searchError$ = this.searchEvents$.pipe(
+    map((event: SearchEvent) => {
+      if (event.type === 'error') return true;
+      if (event.type === 'loading') return false;
+      if (event.type === 'success') return false;
+      return false;
+    }),
+    distinctUntilChanged(),
+  );
+
+  searchResult$ = this.searchEvents$.pipe(
+    scan(
+      (state: { lastGood: Task[] }, event: SearchEvent) => {
+        if (event.type === 'success') {
+          return { lastGood: event.tasks };
+        }
+        return state;
+      },
+      { lastGood: [] },
+    ),
+    map((state) => state.lastGood),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+  hasAnyResults$ = this.searchResult$.pipe(
+    map((tasks) => tasks.length > 0),
+    distinctUntilChanged(),
+  );
 
   taskListVm$ = combineLatest([
     this.searchResult$,
@@ -391,6 +417,7 @@ export class TaskStoreService {
     this.trimTerm$,
     this.rawTerm$,
     this.statusFilter$,
+    this.searchError$,
   ]).pipe(
     map(
       ([
@@ -401,10 +428,16 @@ export class TaskStoreService {
         trimTerm,
         rawTerm,
         taskStatus,
+        hasError,
       ]) => {
-        const showNoTasksYet = !hasAnyTasks && !loading && trimTerm.length < 2;
+        const showNoTasksYet =
+          !hasAnyTasks && !loading && trimTerm.length < 2 && !hasError;
         const showNoResults =
-          hasAnyTasks && !hasAnyResults && !loading && trimTerm.length >= 2;
+          hasAnyTasks &&
+          !hasAnyResults &&
+          !loading &&
+          trimTerm.length >= 2 &&
+          !hasError;
 
         return {
           items,
@@ -414,6 +447,7 @@ export class TaskStoreService {
           trimTerm,
           rawTerm,
           taskStatus,
+          hasError,
         };
       },
     ),
