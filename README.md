@@ -1,59 +1,87 @@
 # Taskboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.5.
+Taskboard is a learning-focused Angular app that demonstrates state management, RxJS streams, and user-friendly UX patterns.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- Full CRUD for tasks
+- Search with debounce and UX rules
+- Undo delete with countdown toast
+- Optimistic UI updates
+- LocalStorage persistence
+- OnPush change detection everywhere
 
-```bash
-ng serve
-```
+## Architecture
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Components – pure UI, no business logic, OnPush onlyf
+- Store (TaskStoreService) – single source of truth
+- ViewModel streams – components consume Observables, never state directly
+- Persistence layer – LocalStorage for tasks and UI preferences
 
-## Code scaffolding
+## High-level data flow
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- UI Event → Subject → RxJS pipeline → State update → VM$ → Template
+- Components are reactive views, not controllers
+- All state changes go through a single entry point
+- No imperative subscriptions inside components
 
-```bash
-ng generate component component-name
-```
+## RxJS Highlights
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- This project is intentionally RxJS-heavy. The goal is clarity, predictability, and control over side effects.
+- Used patterns and operators:
+- BehaviorSubject – centralized state container
+- scan – incremental state accumulation (Redux-like, but lightweight)
+- switchMap – async workflows (search, fake API calls)
+- shareReplay(1) – cache latest values and avoid duplicate subscriptions
+- combineLatest – ViewModel composition
+- filter / map / tap – pure transformations and side effects
 
-```bash
-ng generate --help
-```
+## Mental model
 
-## Building
+- No business logic inside components
+- Components only listen to $ streams
+- Every async interaction is modeled as a stream
 
-To build the project run:
+## State & UX Rules
 
-```bash
-ng build
-```
+- These rules are explicitly enforced in the store:
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### Search
 
-## Running unit tests
+- Empty or short search term → return all tasks
+- Loading indicator appears only during real async calls
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+### Undo
 
-```bash
-ng test
-```
+- Deleting a task triggers a toast with countdown
+- Undo restores the last deleted task
 
-## Running end-to-end tests
+### Optimistic updates
 
-For end-to-end (e2e) testing, run:
+- UI updates immediately
+- Backend synchronization (fake API) happens afterward
 
-```bash
-ng e2e
-```
+## Getting Started
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+    npm install
 
-## Additional Resources
+    ng serve
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+    Angular: 20.1.0,
+
+    Development server runs on:
+
+    http://localhost:4200
+
+## Roadmap
+
+.
+
+## Why this project exists
+
+Taskboard is not "just another todo app".
+Its purpose is to:
+Demonstrate real-world RxJS usage
+Build a strong mental model for state management without over-engineering
+Serve as an interview-ready Angular reference project
+If you understand this codebase, you understand how to structure serious Angular applications.
