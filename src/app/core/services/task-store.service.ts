@@ -53,7 +53,9 @@ type SearchEvent = SuccessEvent | ErrorEvent | LoadingEvent;
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
   private readonly STORAGE_KEY = 'taskboard_tasks';
+  private readonly TASKBOARD_UI_PREFS_KEY = 'taskboard_ui_prefs';
   private readonly toastService = inject(ToastService);
+  private readonly keyWordsStatus = ['all', 'todo', 'in-progress', 'done'];
 
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
   private _searchTerm$ = new BehaviorSubject<string>('');
@@ -336,12 +338,14 @@ export class TaskStoreService {
     this.searchTerm$,
     this.statusFilter$,
   ]).pipe(
-    map(([searchTerm, filter]) => {
-      return JSON.stringify({ searchTerm, filter });
+    map(([searchTerm, statusFilter]) => {
+      return JSON.stringify({ searchTerm, statusFilter });
     }),
     debounceTime(300),
     distinctUntilChanged(),
-    tap((jsonString) => localStorage.setItem('searchFilter', jsonString)),
+    tap((jsonString) =>
+      localStorage.setItem(this.TASKBOARD_UI_PREFS_KEY, jsonString),
+    ),
   );
 
   private loadFromStorage(): void {
@@ -370,20 +374,17 @@ export class TaskStoreService {
   }
 
   private loadFromStorageSearchInput() {
-    const storedSearchInput = localStorage.getItem('searchTerm');
-    const storedStatusFilter = localStorage.getItem('statusFilter');
-    const statusKeyWords = ['all', 'todo', 'in-progress', 'done'];
+    const storedSearchFilter = localStorage.getItem(
+      this.TASKBOARD_UI_PREFS_KEY,
+    );
 
     try {
-      if (storedSearchInput) {
-        const rawSearch = JSON.parse(storedSearchInput);
-        this._searchTerm$.next(rawSearch);
-      }
+      if (storedSearchFilter) {
+        const taskboadPrefKeys = JSON.parse(storedSearchFilter);
 
-      if (storedStatusFilter) {
-        const rawStatus = JSON.parse(storedStatusFilter);
-        if (statusKeyWords.includes(rawStatus)) {
-          this._statusFilter$.next(rawStatus);
+        if (this.isTaskboardUiPrefs(taskboadPrefKeys)) {
+          this._searchTerm$.next(taskboadPrefKeys.searchTerm);
+          this._statusFilter$.next(taskboadPrefKeys.statusFilter);
         }
       }
     } catch (e) {
@@ -469,8 +470,6 @@ export class TaskStoreService {
     );
   }
 
-  // ******************************************************
-
   private filterByStatus(
     filteredTasks: Task[],
     taskStatus: TaskStatus | 'all',
@@ -535,7 +534,7 @@ export class TaskStoreService {
   private fakeSearchApi(term: string): Observable<Task[]> {
     return timer(1000).pipe(
       map(() => {
-        if (Math.random() > 0.15) {
+        if (Math.random() > 0.75) {
           return this.snapshot.filter((task) =>
             task.title.toLowerCase().includes(term.toLowerCase()),
           );
@@ -543,6 +542,25 @@ export class TaskStoreService {
           throw new Error('API FAILED');
         }
       }),
+    );
+  }
+
+  private isValidStatusFilter(arg: unknown): boolean {
+    return typeof arg === 'string' && this.keyWordsStatus.includes(arg);
+  }
+
+  private isTaskboardUiPrefs(arg: unknown): boolean {
+    if (typeof arg !== 'object' || arg === null) return false;
+
+    const obj = arg as Record<string, unknown>;
+
+    const searchTermValue = obj['searchTerm'];
+    const statusFilterValue = obj['statusFilter'];
+
+    return (
+      typeof searchTermValue === 'string' &&
+      typeof statusFilterValue === 'string' &&
+      this.isValidStatusFilter(statusFilterValue)
     );
   }
 }
