@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { DestroyRef, inject, Injectable } from '@angular/core';
 import { Task, TaskStatus } from '../models/task.model';
 import {
   BehaviorSubject,
@@ -28,6 +28,7 @@ import {
   withLatestFrom,
 } from 'rxjs';
 import { ToastService } from './toast.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 interface StatusChangeRequest {
   id: string;
@@ -52,63 +53,56 @@ type SearchEvent = SuccessEvent | ErrorEvent | LoadingEvent;
 
 @Injectable({ providedIn: 'root' })
 export class TaskStoreService {
+  // ======= constants =======
   private readonly STORAGE_KEY = 'taskboard_tasks';
   private readonly TASKBOARD_UI_PREFS_KEY = 'taskboard_ui_prefs';
+  private readonly keyWordsStatus = [
+    'all',
+    'todo',
+    'in-progress',
+    'done',
+  ] as const;
+
+  // ======= deps ========
   private readonly toastService = inject(ToastService);
-  private readonly keyWordsStatus = ['all', 'todo', 'in-progress', 'done'];
+  private readonly destroyRef = inject(DestroyRef);
 
+  // ======= states =======
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
-  private _searchTerm$ = new BehaviorSubject<string>('');
-  private _statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>('all');
-  private _updatingTaskIds$ = new BehaviorSubject<Set<string>>(new Set());
-
-  lastDeletedTaskSubject$ = new BehaviorSubject<Task | null>(null);
-  deleteTriggered$ = new Subject<void>();
-  undoClicked$ = new Subject<void>();
-  statusChangeRequested$ = new Subject<StatusChangeRequest>();
-  retryClicked$ = new Subject<void>();
-
   readonly tasks$ = this._tasks$.asObservable();
+
+  private readonly _searchTerm$ = new BehaviorSubject<string>('');
   readonly searchTerm$ = this._searchTerm$.asObservable();
+
+  private readonly _statusFilter$ = new BehaviorSubject<TaskStatus | 'all'>(
+    'all',
+  );
   readonly statusFilter$ = this._statusFilter$.asObservable();
+
+  private readonly _updatingTaskIds$ = new BehaviorSubject<Set<string>>(
+    new Set(),
+  );
   readonly updatingTaskIds$ = this._updatingTaskIds$.asObservable();
-  readonly lastDeletedTask$ = this.lastDeletedTaskSubject$.asObservable();
+
+  private readonly _deleteTriggered$ = new Subject<void>();
+  readonly deleteTriggered$ = this._deleteTriggered$.asObservable();
+
+  private readonly _lastDeletedTask$ = new BehaviorSubject<Task | null>(null);
+  readonly lastDeletedTask$ = this._lastDeletedTask$.asObservable();
+
+  private readonly _undoClicked$ = new Subject<void>();
+  readonly undoClicked$ = this._undoClicked$.asObservable();
+
+  private readonly _statusChangeRequested$ = new Subject<StatusChangeRequest>();
+  readonly statusChangeRequested$ = this._statusChangeRequested$.asObservable();
+
+  private readonly _retryClicked$ = new Subject<void>();
+  readonly retryClicked$ = this._retryClicked$.asObservable();
 
   constructor() {
     this.loadFromStorage();
     this.loadFromStorageSearchInput();
-    this.persistUiPrefs$.subscribe();
-    this.deleteTriggered$
-      .pipe(
-        switchMap(() =>
-          merge(
-            this.undoClicked$,
-            this.undoCountdown$.pipe(filter((v) => v === 0)),
-          ).pipe(take(1)),
-        ),
-        tap(() => this.lastDeletedTaskSubject$.next(null)),
-      )
-      .subscribe();
-
-    this.statusChangeRequested$
-      .pipe(
-        tap((request) => this.startUpdating(request.id)),
-        switchMap((request) =>
-          this.fakeUpdateStatusApi(request).pipe(
-            catchError((error) => {
-              console.error('API error occurred', error);
-              this.rollbackStatus(request);
-              this.toastService.show(
-                'API error occurred, status change failed',
-                'error',
-              );
-              return EMPTY;
-            }),
-            finalize(() => this.stopUpdating(request.id)),
-          ),
-        ),
-      )
-      .subscribe();
+    this.connectEffects();
   }
 
   searchRequest$ = this.searchTerm$.pipe(
@@ -170,6 +164,7 @@ export class TaskStoreService {
       return false;
     }),
     distinctUntilChanged(),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   searchError$ = this.searchEvents$.pipe(
@@ -180,6 +175,7 @@ export class TaskStoreService {
       return false;
     }),
     distinctUntilChanged(),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   hasAnyResults$ = this.searchResult$.pipe(
@@ -317,6 +313,7 @@ export class TaskStoreService {
 
       return { filterEmpty, taskStatus };
     }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   pageVm$ = combineLatest([
@@ -401,7 +398,7 @@ export class TaskStoreService {
   }
 
   public retrySearch() {
-    this.retryClicked$.next();
+    this._retryClicked$.next();
   }
 
   addTask(task: Task): void {
@@ -417,7 +414,7 @@ export class TaskStoreService {
 
     if (!oldTask) return;
 
-    this.statusChangeRequested$.next({
+    this._statusChangeRequested$.next({
       id,
       oldStatus: oldTask.status,
       newStatus,
@@ -444,8 +441,8 @@ export class TaskStoreService {
     const lastOneTask = this.snapshot.find((task) => task.id === id);
 
     if (lastOneTask) {
-      this.deleteTriggered$.next();
-      this.lastDeletedTaskSubject$.next(lastOneTask);
+      this._deleteTriggered$.next();
+      this._lastDeletedTask$.next(lastOneTask);
     }
 
     this._tasks$.next(updated);
@@ -458,7 +455,7 @@ export class TaskStoreService {
     if (!task) return;
 
     this.addTask(task);
-    this.undoClicked$.next();
+    this._undoClicked$.next();
   }
 
   sortByDate(list: Task[]) {
@@ -489,7 +486,7 @@ export class TaskStoreService {
   }
 
   private get lastDelTask(): Task | null {
-    return this.lastDeletedTaskSubject$.value;
+    return this._lastDeletedTask$.value;
   }
 
   private fakeUpdateStatusApi(arg: StatusChangeRequest): Observable<void> {
@@ -534,7 +531,7 @@ export class TaskStoreService {
   private fakeSearchApi(term: string): Observable<Task[]> {
     return timer(1000).pipe(
       map(() => {
-        if (Math.random() > 0.75) {
+        if (Math.random() > 0.15) {
           return this.snapshot.filter((task) =>
             task.title.toLowerCase().includes(term.toLowerCase()),
           );
@@ -546,7 +543,10 @@ export class TaskStoreService {
   }
 
   private isValidStatusFilter(arg: unknown): boolean {
-    return typeof arg === 'string' && this.keyWordsStatus.includes(arg);
+    return (
+      typeof arg === 'string' &&
+      this.keyWordsStatus.includes(arg as 'all' | TaskStatus)
+    );
   }
 
   private isTaskboardUiPrefs(arg: unknown): boolean {
@@ -562,5 +562,42 @@ export class TaskStoreService {
       typeof statusFilterValue === 'string' &&
       this.isValidStatusFilter(statusFilterValue)
     );
+  }
+
+  private connectEffects(): void {
+    this.persistUiPrefs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.deleteTriggered$
+      .pipe(
+        switchMap(() =>
+          merge(
+            this.undoClicked$,
+            this.undoCountdown$.pipe(filter((v) => v === 0)),
+          ).pipe(take(1)),
+        ),
+        tap(() => this._lastDeletedTask$.next(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe();
+
+    this.statusChangeRequested$
+      .pipe(
+        tap((request) => this.startUpdating(request.id)),
+        switchMap((request) =>
+          this.fakeUpdateStatusApi(request).pipe(
+            catchError((error) => {
+              console.error('API error occurred', error);
+              this.rollbackStatus(request);
+              this.toastService.show(
+                'API error occurred, status change failed',
+                'error',
+              );
+              return EMPTY;
+            }),
+            finalize(() => this.stopUpdating(request.id)),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe();
   }
 }
