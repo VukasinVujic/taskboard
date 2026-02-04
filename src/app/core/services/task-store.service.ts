@@ -85,19 +85,15 @@ export class TaskStoreService {
   readonly updatingTaskIds$ = this._updatingTaskIds$.asObservable();
 
   private readonly _deleteTriggered$ = new Subject<void>();
-  readonly deleteTriggered$ = this._deleteTriggered$.asObservable();
 
   private readonly _lastDeletedTask$ = new BehaviorSubject<Task | null>(null);
   readonly lastDeletedTask$ = this._lastDeletedTask$.asObservable();
 
   private readonly _undoClicked$ = new Subject<void>();
-  readonly undoClicked$ = this._undoClicked$.asObservable();
 
   private readonly _statusChangeRequested$ = new Subject<StatusChangeRequest>();
-  readonly statusChangeRequested$ = this._statusChangeRequested$.asObservable();
 
   private readonly _retryClicked$ = new Subject<void>();
-  readonly retryClicked$ = this._retryClicked$.asObservable();
 
   constructor() {
     this.loadFromStorage();
@@ -111,7 +107,7 @@ export class TaskStoreService {
     map((term) => term.trim()),
   );
 
-  retryTerm$ = this.retryClicked$.pipe(
+  retryTerm$ = this._retryClicked$.pipe(
     withLatestFrom(this.searchRequest$),
     map(([_, term]) => {
       return term;
@@ -240,7 +236,7 @@ export class TaskStoreService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
-  public items$ = this.taskListVm$.pipe(map((vm) => vm.items));
+  items$ = this.taskListVm$.pipe(map((vm) => vm.items));
 
   filteredTasks$ = combineLatest([this.items$, this.statusFilter$]).pipe(
     map(([tasks, taskStatus]) => {
@@ -249,7 +245,7 @@ export class TaskStoreService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
-  public kanbanVm$ = this.filteredTasks$.pipe(
+  kanbanVm$ = this.filteredTasks$.pipe(
     map((tasks) => ({
       todo: this.sortByDate(tasks.filter((t) => t.status === 'todo')),
       inProgress: this.sortByDate(
@@ -260,12 +256,12 @@ export class TaskStoreService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
   // showing the counter value
-  undoCountdown$ = this.deleteTriggered$.pipe(
+  undoCountdown$ = this._deleteTriggered$.pipe(
     switchMap(() =>
       timer(0, 1000).pipe(
         map((tick) => 10 - tick),
         takeWhile((value) => value >= 0),
-        takeUntil(this.undoClicked$),
+        takeUntil(this._undoClicked$),
       ),
     ),
     startWith(null),
@@ -274,8 +270,8 @@ export class TaskStoreService {
 
   // only to show/hide undo container
   showUndo$ = merge(
-    this.deleteTriggered$.pipe(mapTo(true)),
-    this.undoClicked$.pipe(mapTo(false)),
+    this._deleteTriggered$.pipe(mapTo(true)),
+    this._undoClicked$.pipe(mapTo(false)),
     this.undoCountdown$.pipe(
       filter((v) => v === 0),
       mapTo(false),
@@ -566,11 +562,11 @@ export class TaskStoreService {
 
   private connectEffects(): void {
     this.persistUiPrefs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-    this.deleteTriggered$
+    this._deleteTriggered$
       .pipe(
         switchMap(() =>
           merge(
-            this.undoClicked$,
+            this._undoClicked$,
             this.undoCountdown$.pipe(filter((v) => v === 0)),
           ).pipe(take(1)),
         ),
@@ -579,7 +575,7 @@ export class TaskStoreService {
       )
       .subscribe();
 
-    this.statusChangeRequested$
+    this._statusChangeRequested$
       .pipe(
         tap((request) => this.startUpdating(request.id)),
         switchMap((request) =>
