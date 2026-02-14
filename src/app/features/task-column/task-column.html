@@ -1,52 +1,52 @@
 <div class="column">
   <h3 class="column-title">{{ title }}</h3>
-  @for( task of tasks; track task.id){
-
-  <div class="column-taskCard">
-    <div>Title: {{ task.title }}</div>
-    <div>Status: {{ task.status }}</div>
-    <div class="column-actions">
-      @for (status of statuses; track status){
-      <button
-        class="column-btn"
-        [disabled]="updatingTaskIds?.has(task.id)"
-        (click)="onChangeStatus(task.id, status)"
-      >
-        {{ updatingTaskIds?.has(task.id) ? "Updating ..." : status }}
-      </button>
-      }
-      <button class="column-btn column-del" (click)="onOpenDialog(task.id)">
-        Delete task
-      </button>
-      <button class="column-btn" (click)="openEdit(task)">Edit task</button>
-    </div>
-  </div>
-  } @if(showEditTask) {
-
-  <div class="task-container" (click)="closeEdit()">
-    <div (click)="$event.stopPropagation()" class="modal">
-      <div class="task-header">
-        <div class="task-header-txt">Edit task</div>
-        <button class="task-x-btn" (click)="closeEdit()">X</button>
+  @for (task of tasks; track task.id) {
+    <div class="column-taskCard">
+      <div>Title: {{ task.title }}</div>
+      <div>Status: {{ task.status }}</div>
+      <div class="column-actions">
+        @for (status of statuses; track status) {
+          <button
+            class="column-btn"
+            [disabled]="updatingTaskIds.has(task.id)"
+            (click)="onChangeStatus(task.id, status)"
+          >
+            {{ updatingTaskIds.has(task.id) ? "Updating ..." : status }}
+          </button>
+        }
+        <button class="column-btn column-del" (click)="onOpenDialog(task.id)">
+          Delete task
+        </button>
+        <button class="column-btn" (click)="openEdit(task)">Edit task</button>
       </div>
+    </div>
+  }
+  @if (showEditTask) {
+    <div class="task-container" (click)="closeEdit()">
+      <div (click)="$event.stopPropagation()" class="modal">
+        <div class="task-header">
+          <div class="task-header-txt">Edit task</div>
+          <button class="task-x-btn" (click)="closeEdit()">X</button>
+        </div>
 
-      <app-task-edit
-        [task]="selectedTask"
-        (save)="saveEdit($event)"
-        (cancel)="closeEdit()"
-      />
+        <app-task-edit
+          [task]="selectedTask"
+          (save)="saveEdit($event)"
+          (cancel)="closeEdit()"
+        />
+      </div>
     </div>
-  </div>
-  } @if(showDeleteTask){
-  <div class="confirm-dialog-container" (click)="closeDialog()">
-    <div (click)="$event.stopPropagation()">
-      <app-confirm-dialog
-        [taskId]="selectedIdTask"
-        [action]="action"
-        (confirm)="onDeleteTask($event)"
-        (cancel)="closeDialog()"
-      />
+  }
+  @if (showDeleteTask) {
+    <div class="confirm-dialog-container" (click)="closeDialog()">
+      <div (click)="$event.stopPropagation()">
+        <app-confirm-dialog
+          [taskId]="selectedIdTask"
+          [action]="action"
+          (confirm)="onDeleteTask($event)"
+          (cancel)="closeDialog()"
+        />
+      </div>
     </div>
-  </div>
   }
 </div>

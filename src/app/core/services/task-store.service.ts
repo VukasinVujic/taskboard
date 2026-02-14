@@ -29,6 +29,7 @@ import {
 } from 'rxjs';
 import { ToastService } from './toast.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TaskApiService } from './task-api.service';
 
 interface StatusChangeRequest {
   id: string;
@@ -66,6 +67,7 @@ export class TaskStoreService {
   // ======= deps ========
   private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly api = inject(TaskApiService);
 
   // ======= states =======
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
@@ -127,6 +129,10 @@ export class TaskStoreService {
 
       const loading$ = of({ type: 'loading' } as const);
 
+      // *******
+      // *******
+      // *******
+      // *******
       const api$ = this.fakeSearchApi(term).pipe(
         map((tasks): SuccessEvent => ({ type: 'success', tasks })),
         catchError(() => {
@@ -592,6 +598,18 @@ export class TaskStoreService {
             finalize(() => this.stopUpdating(request.id)),
           ),
         ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe();
+
+    this.api
+      .getTasks()
+      .pipe(
+        tap((tasks) => this._tasks$.next(tasks)),
+        catchError((err) => {
+          console.error(err);
+          return EMPTY;
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe();
