@@ -129,11 +129,7 @@ export class TaskStoreService {
 
       const loading$ = of({ type: 'loading' } as const);
 
-      // *******
-      // *******
-      // *******
-      // *******
-      const api$ = this.fakeSearchApi(term).pipe(
+      const api$ = this.api.searchTasks(term).pipe(
         map((tasks): SuccessEvent => ({ type: 'success', tasks })),
         catchError(() => {
           this.toastService.show('Search failed', 'error');
@@ -528,20 +524,6 @@ export class TaskStoreService {
     nextList.delete(id);
 
     this._updatingTaskIds$.next(nextList);
-  }
-
-  private fakeSearchApi(term: string): Observable<Task[]> {
-    return timer(1000).pipe(
-      map(() => {
-        if (Math.random() > 0.15) {
-          return this.snapshot.filter((task) =>
-            task.title.toLowerCase().includes(term.toLowerCase()),
-          );
-        } else {
-          throw new Error('API FAILED');
-        }
-      }),
-    );
   }
 
   private isValidStatusFilter(arg: unknown): boolean {

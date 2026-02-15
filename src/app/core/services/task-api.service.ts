@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Task } from '../models/task.model';
@@ -9,5 +9,12 @@ export class TaskApiService {
 
   getTasks(): Observable<Task[]> {
     return this.http.get<Task[]>('/api/tasks');
+  }
+
+  searchTasks(term: string): Observable<Task[]> {
+    const params = term
+      ? new HttpParams({ fromObject: { title: term } })
+      : undefined;
+    return this.http.get<Task[]>('api/tasks', { params });
   }
 }
