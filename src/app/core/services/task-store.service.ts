@@ -365,13 +365,27 @@ export class TaskStoreService {
             term,
             loading: false,
             data: [],
-            error: error?.message ?? 'Search failed',
+            error: this.translator(error),
           }),
         ),
       );
     }),
     shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  private translator(arg: unknown): string {
+    if (
+      typeof arg === 'object' &&
+      arg !== null &&
+      'status' in arg &&
+      typeof arg.status === 'number'
+    ) {
+      if (arg.status === 0) return 'No internet connection';
+      if (arg.status >= 500) return 'Server error (500)';
+      if (arg.status === 404) return 'User error';
+    }
+    return 'Request failed';
+  }
 
   private loadFromStorage(): void {
     const stored = localStorage.getItem(this.STORAGE_KEY);
