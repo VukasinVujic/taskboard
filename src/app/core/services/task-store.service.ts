@@ -104,9 +104,9 @@ export class TaskStoreService {
   }
 
   searchRequest$ = this.searchTerm$.pipe(
+    map((term) => term.trim()),
     debounceTime(300),
     distinctUntilChanged(),
-    map((term) => term.trim()),
   );
 
   retryTerm$ = this._retryClicked$.pipe(
@@ -341,6 +341,36 @@ export class TaskStoreService {
     tap((jsonString) =>
       localStorage.setItem(this.TASKBOARD_UI_PREFS_KEY, jsonString),
     ),
+  );
+
+  term$ = this.searchTerm$.pipe(
+    map((term) => term.trim()),
+    debounceTime(300),
+    distinctUntilChanged(),
+  );
+
+  triggeredTerm$ = merge(this.term$, this.retryTerm$);
+
+  searchState$ = this.triggeredTerm$.pipe(
+    switchMap((term) => {
+      if (term.length < 2)
+        return this.tasks$.pipe(
+          map((tasks) => ({ term, data: tasks, loading: false, error: null })),
+        );
+      return this.api.searchTasks(term).pipe(
+        startWith({ term, data: [], loading: true, error: null }),
+        map((result) => ({ term, data: result, loading: false, error: null })),
+        catchError((error) =>
+          of({
+            term,
+            loading: false,
+            data: [],
+            error: error?.message ?? 'Search failed',
+          }),
+        ),
+      );
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   private loadFromStorage(): void {
