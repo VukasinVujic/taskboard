@@ -8,7 +8,6 @@ import {
   Renderer2,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskEdit } from '../task-edit/task-edit';
