@@ -1,0 +1,16 @@
+<p>task-detail-page works!</p>
+
+@if (vm$ | async; as vm) {
+  @if (vm.state === "loading") {
+    <p>loading...</p>
+  }
+
+  @if (vm.state === "ready") {
+    <p>task id: {{ vm.task.id }}</p>
+    <p>task title: {{ vm.task.title }}</p>
+  }
+
+  @if (vm.state === "error") {
+    <p>Task not found...</p>
+  }
+}
