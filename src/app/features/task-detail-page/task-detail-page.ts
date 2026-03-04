@@ -9,6 +9,7 @@ import {
   filter,
   map,
   of,
+  shareReplay,
   switchMap,
 } from 'rxjs';
 import { TaskApiService } from '../../core/services/task-api.service';
@@ -42,5 +43,6 @@ export class TaskDetailPage {
 
       return concat(loading$, api$);
     }),
+    shareReplay(1),
   );
 }

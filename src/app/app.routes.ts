@@ -11,4 +11,5 @@ export const routes: Routes = [
     path: 'tasks/:id',
     component: TaskDetailPage,
   },
+  { path: '**', redirectTo: 'tasks' },
 ];

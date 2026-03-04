@@ -21,4 +21,8 @@ export class TaskApiService {
   getTaskById(id: string): Observable<Task> {
     return this.http.get<Task>(`api/tasks/${id}`);
   }
+
+  deleteTaskById(id: string): Observable<Task> {
+    return this.http.delete<Task>(`api/tasks/${id}`);
+  }
 }

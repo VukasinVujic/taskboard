@@ -8,6 +8,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   EMPTY,
+  exhaustMap,
   filter,
   finalize,
   map,
@@ -97,10 +98,13 @@ export class TaskStoreService {
 
   private readonly _retryClicked$ = new Subject<void>();
 
+  private readonly _deleteTaskRequested$ = new Subject<string>();
+
   constructor() {
     this.loadFromStorage();
     this.loadFromStorageSearchInput();
     this.connectEffects();
+    this.deleteOneTask();
   }
 
   searchRequest$ = this.searchTerm$.pipe(
@@ -373,6 +377,31 @@ export class TaskStoreService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
+  triggerStream$ = this._deleteTaskRequested$.pipe(
+    tap((id) => {
+      const newSet = new Set(this._updatingTaskIds$.value).add(id);
+      this._updatingTaskIds$.next(newSet);
+    }),
+    exhaustMap((id) =>
+      this.api.deleteTaskById(id).pipe(
+        tap(() => {
+          const updated = this.snapshot.filter((task) => task.id !== id);
+          this._tasks$.next(updated);
+          this.persist(updated);
+        }),
+        catchError((err) => {
+          console.error('Delete failed', err);
+          return EMPTY;
+        }),
+        finalize(() => {
+          const newSet = new Set(this._updatingTaskIds$.value);
+          newSet.delete(id);
+          this._updatingTaskIds$.next(newSet);
+        }),
+      ),
+    ),
+  );
+
   private translator(arg: unknown): string {
     if (
       typeof arg === 'object' &&
@@ -479,16 +508,7 @@ export class TaskStoreService {
   }
 
   deleteTask(id: string): void {
-    const updated = this.snapshot.filter((task) => task.id !== id);
-    const lastOneTask = this.snapshot.find((task) => task.id === id);
-
-    if (lastOneTask) {
-      this._deleteTriggered$.next();
-      this._lastDeletedTask$.next(lastOneTask);
-    }
-
-    this._tasks$.next(updated);
-    this.persist(updated);
+    this._deleteTaskRequested$.next(id);
   }
 
   undoDelete(): void {
@@ -639,5 +659,9 @@ export class TaskStoreService {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe();
+  }
+
+  private deleteOneTask(): void {
+    this.triggerStream$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 }
