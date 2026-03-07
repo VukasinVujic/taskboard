@@ -1,10 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Task } from '../models/task.model';
+import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
 export class TaskApiService {
+  private router = inject(Router);
+
   constructor(private http: HttpClient) {}
 
   getTasks(): Observable<Task[]> {

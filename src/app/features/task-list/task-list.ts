@@ -5,6 +5,7 @@ import { TaskStatus, Task } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskColumn } from '../task-column/task-column';
 import { ToastService } from '../../core/services/toast.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-task-list',
@@ -16,6 +17,8 @@ import { ToastService } from '../../core/services/toast.service';
 export class TaskList {
   protected readonly taskStore = inject(TaskStoreService);
   protected readonly toastService = inject(ToastService);
+  private router = inject(Router);
+
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
 
   public taskListVm$ = this.taskStore.taskListVm$;
@@ -75,5 +78,9 @@ export class TaskList {
 
   retrySearch() {
     this.taskStore.retrySearch();
+  }
+
+  addTask() {
+    this.router.navigate(['/tasks/new']);
   }
 }
