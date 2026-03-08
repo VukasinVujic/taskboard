@@ -1,13 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Task } from '../models/task.model';
-import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
 export class TaskApiService {
-  private router = inject(Router);
-
   constructor(private http: HttpClient) {}
 
   getTasks(): Observable<Task[]> {
@@ -27,5 +24,9 @@ export class TaskApiService {
 
   deleteTaskById(id: string): Observable<Task> {
     return this.http.delete<Task>(`api/tasks/${id}`);
+  }
+
+  createTask(task: Task): Observable<Task> {
+    return this.http.post<Task>('api/tasks', task);
   }
 }

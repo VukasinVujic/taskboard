@@ -8,7 +8,6 @@ import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { ToastService } from '../../core/services/toast.service';
 import { TaskApiService } from '../../core/services/task-api.service';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-add-task',
@@ -21,7 +20,6 @@ export class AddTask {
   private fb = inject(NonNullableFormBuilder);
   private taskStore = inject(TaskStoreService);
   protected readonly api = inject(TaskApiService);
-  private router = inject(Router);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
   protected readonly toastService = inject(ToastService);
@@ -61,15 +59,5 @@ export class AddTask {
       dueDate: dueDate,
       createdAt: new Date().toISOString(),
     });
-
-    this.form.reset({
-      title: '',
-      description: '',
-      priority: 'medium',
-      dueDate: '',
-    });
-
-    this.toastService.show('Task Created', 'success');
-    this.router.navigate(['/tasks']);
   }
 }

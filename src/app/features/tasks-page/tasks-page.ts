@@ -1,15 +1,13 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AddTask } from '../add-task/add-task';
 import { CommonModule } from '@angular/common';
 import { TaskList } from '../task-list/task-list';
 import { TaskStoreService } from '../../core/services/task-store.service';
-import { map } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-tasks-page',
-  imports: [AddTask, CommonModule, TaskList],
+  imports: [CommonModule, TaskList],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.scss',
 })

@@ -31,6 +31,7 @@ import {
 import { ToastService } from './toast.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TaskApiService } from './task-api.service';
+import { Router } from '@angular/router';
 
 interface StatusChangeRequest {
   id: string;
@@ -69,6 +70,7 @@ export class TaskStoreService {
   private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly api = inject(TaskApiService);
+  private router = inject(Router);
 
   // ======= states =======
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
@@ -100,11 +102,14 @@ export class TaskStoreService {
 
   private readonly _deleteTaskRequested$ = new Subject<string>();
 
+  private readonly _createTaskRequested$ = new Subject<Task>();
+
   constructor() {
     this.loadFromStorage();
     this.loadFromStorageSearchInput();
     this.connectEffects();
     this.deleteOneTask();
+    this.createOneTask();
   }
 
   searchRequest$ = this.searchTerm$.pipe(
@@ -402,6 +407,26 @@ export class TaskStoreService {
     ),
   );
 
+  triggerCreateStream$ = this._createTaskRequested$.pipe(
+    tap((task) => console.log(task)),
+    exhaustMap((task) =>
+      this.api.createTask(task).pipe(
+        tap((taskServer) => {
+          const updated = [...this.snapshot, taskServer];
+          this._tasks$.next(updated);
+          this.persist(updated);
+          this.toastService.show('Task Created', 'success');
+          this.router.navigate(['/tasks']);
+        }),
+
+        catchError((err) => {
+          console.error(err);
+          return EMPTY;
+        }),
+      ),
+    ),
+  );
+
   private translator(arg: unknown): string {
     if (
       typeof arg === 'object' &&
@@ -473,9 +498,7 @@ export class TaskStoreService {
   }
 
   addTask(task: Task): void {
-    const updated = [...this.snapshot, task];
-    this._tasks$.next(updated);
-    this.persist(updated);
+    this._createTaskRequested$.next(task);
   }
 
   updateTaskByStatus(id: string, newStatus: TaskStatus): void {
@@ -648,20 +671,30 @@ export class TaskStoreService {
       )
       .subscribe();
 
-    this.api
-      .getTasks()
-      .pipe(
-        tap((tasks) => this._tasks$.next(tasks)),
-        catchError((err) => {
-          console.error(err);
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe();
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+
+    if (!stored) {
+      this.api
+        .getTasks()
+        .pipe(
+          tap((tasks) => this._tasks$.next(tasks)),
+          catchError((err) => {
+            console.error(err);
+            return EMPTY;
+          }),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe();
+    }
   }
 
   private deleteOneTask(): void {
     this.triggerStream$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+  }
+
+  private createOneTask(): void {
+    this.triggerCreateStream$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
   }
 }
