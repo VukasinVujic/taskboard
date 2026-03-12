@@ -10,12 +10,12 @@ import {
 import { CommonModule } from '@angular/common';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
-import { TaskEdit } from '../task-edit/task-edit';
 import { ConfirmDialog } from '../confirm-dialog/confirm-dialog';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-task-column',
-  imports: [CommonModule, TaskEdit, ConfirmDialog],
+  imports: [CommonModule, ConfirmDialog],
   standalone: true,
   templateUrl: './task-column.html',
   styleUrl: './task-column.scss',
@@ -36,14 +36,13 @@ export class TaskColumn {
 
   @HostListener('document:keydown.escape')
   onEsc() {
-    this.closeEdit();
     this.closeDialog();
   }
 
   private renderer = inject(Renderer2);
+  private router = inject(Router);
 
   showEditTask: boolean = false;
-  selectedTask: Task | null = null;
   showDeleteTask: boolean = false;
   action: string = 'delete';
   selectedIdTask: string = '';
@@ -73,21 +72,8 @@ export class TaskColumn {
 
   openEdit(task: Task) {
     this.showEditTask = true;
-    this.selectedTask = task;
     this.showOrLockScroll();
-  }
-
-  saveEdit(updatedTask: Task) {
-    this.saveTask.emit(updatedTask);
-    this.showEditTask = false;
-    this.selectedTask = null;
-    this.showOrLockScroll();
-  }
-
-  closeEdit() {
-    this.showEditTask = false;
-    this.selectedTask = null;
-    this.showOrLockScroll();
+    this.router.navigate([`/tasks/${task.id}/edit`]);
   }
 
   showOrLockScroll() {

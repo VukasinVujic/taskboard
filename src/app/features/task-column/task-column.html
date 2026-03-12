@@ -25,22 +25,6 @@
       </div>
     </div>
   }
-  @if (showEditTask) {
-    <div class="task-container" (click)="closeEdit()">
-      <div (click)="$event.stopPropagation()" class="modal">
-        <div class="task-header">
-          <div class="task-header-txt">Edit task</div>
-          <button class="task-x-btn" (click)="closeEdit()">X</button>
-        </div>
-
-        <app-task-edit
-          [task]="selectedTask"
-          (save)="saveEdit($event)"
-          (cancel)="closeEdit()"
-        />
-      </div>
-    </div>
-  }
   @if (showDeleteTask) {
     <div class="confirm-dialog-container" (click)="closeDialog()">
       <div (click)="$event.stopPropagation()">
