@@ -81,4 +81,7 @@ export class TaskColumn {
       ? this.renderer.setStyle(document.body, 'overflow', 'hidden')
       : this.renderer.setStyle(document.body, 'overflow', 'auto');
   }
+  redirectToDetails(id: string) {
+    this.router.navigate([`/tasks/${id}`]);
+  }
 }

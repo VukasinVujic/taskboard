@@ -1,5 +1,7 @@
 <p>task-detail-page works!</p>
 
+<button (click)="goBack()">Go Back</button>
+
 @if (vm$ | async; as vm) {
   @if (vm.state === "loading") {
     <p>loading...</p>

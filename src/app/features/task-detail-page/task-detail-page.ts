@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   catchError,
   concat,
@@ -23,6 +23,7 @@ import { TaskApiService } from '../../core/services/task-api.service';
 export class TaskDetailPage {
   private readonly api = inject(TaskApiService);
   private readonly route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   id$ = this.route.paramMap.pipe(
     map((params) => params.get('id')),
@@ -43,6 +44,10 @@ export class TaskDetailPage {
 
       return concat(loading$, api$);
     }),
-    shareReplay(1),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  goBack() {
+    this.router.navigate([`/tasks`]);
+  }
 }

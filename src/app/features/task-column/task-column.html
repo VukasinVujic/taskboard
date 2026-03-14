@@ -1,7 +1,7 @@
 <div class="column">
   <h3 class="column-title">{{ title }}</h3>
   @for (task of tasks; track task.id) {
-    <div class="column-taskCard">
+    <div class="column-taskCard" (click)="redirectToDetails(task.id)">
       <div>Title: {{ task.title }}</div>
       <div>Status: {{ task.status }}</div>
       <div class="column-actions">
@@ -9,19 +9,24 @@
           <button
             class="column-btn"
             [disabled]="updatingTaskIds.has(task.id)"
-            (click)="onChangeStatus(task.id, status)"
+            (click)="onChangeStatus(task.id, status); $event.stopPropagation()"
           >
             {{ updatingTaskIds.has(task.id) ? "Updating ..." : status }}
           </button>
         }
         <button
           class="column-btn column-del"
-          (click)="onOpenDialog(task.id)"
+          (click)="onOpenDialog(task.id); $event.stopPropagation()"
           [disabled]="updatingTaskIds.has(task.id)"
         >
           {{ updatingTaskIds.has(task.id) ? "Deleting  ..." : "Delete Task" }}
         </button>
-        <button class="column-btn" (click)="openEdit(task)">Edit task</button>
+        <button
+          class="column-btn"
+          (click)="openEdit(task); $event.stopPropagation()"
+        >
+          Edit task
+        </button>
       </div>
     </div>
   }
