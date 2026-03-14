@@ -1,0 +1,52 @@
+.task-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 400px;
+  padding: 1rem;
+  border: 1px solid #1f2937;
+  border-radius: 0.5rem;
+  background: #020617;
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: #9ca3af;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.375rem;
+    border: 1px solid #374151;
+    background: #020617;
+    color: #e5e7eb;
+    font-size: 0.9rem;
+  }
+
+  .error {
+    font-size: 0.75rem;
+    color: #f97373;
+  }
+
+  button {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.375rem;
+    border: none;
+    background: #22c55e;
+    color: #022c22;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+}
