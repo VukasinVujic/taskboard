@@ -1,61 +1,35 @@
 import { Component, inject } from '@angular/core';
-import {
-  NonNullableFormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { ToastService } from '../../core/services/toast.service';
 import { TaskApiService } from '../../core/services/task-api.service';
+import { TaskForm } from '../../shared/components/task-form/task-form';
+import { TaskFormValue } from '../../shared/models/task-form.model';
 
 @Component({
   selector: 'app-add-task',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TaskForm],
   standalone: true,
   templateUrl: './add-task.html',
   styleUrl: './add-task.scss',
 })
 export class AddTask {
-  private fb = inject(NonNullableFormBuilder);
   private taskStore = inject(TaskStoreService);
   protected readonly api = inject(TaskApiService);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
   protected readonly toastService = inject(ToastService);
 
-  form = this.fb.group({
-    title: this.fb.control('', {
-      validators: [Validators.required, Validators.minLength(3)],
-    }),
-    description: this.fb.control(''),
-    priority: this.fb.control<TaskPriority>(this.defaultPriority, {
-      validators: [
-        Validators.required,
-        Validators.pattern(/^(low|medium|high)$/),
-      ],
-    }),
-    dueDate: this.fb.control(''),
-  });
-
-  get titleControl() {
-    return this.form.get('title');
-  }
-
-  submit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const { title, description, priority, dueDate } = this.form.getRawValue();
+  onFormSubmit(newTask: TaskFormValue) {
+    const { title, description, priority, dueDate } = newTask;
 
     this.taskStore.addTask({
       id: crypto.randomUUID(),
       title,
       description: description || undefined,
       status: this.defaultStatus,
-      priority: priority ?? 'medium',
+      priority: priority ?? this.defaultPriority,
       dueDate: dueDate,
       createdAt: new Date().toISOString(),
     });

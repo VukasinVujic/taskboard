@@ -5,6 +5,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { TaskPriority } from '../../../core/models/task.model';
+import { TaskFormValue } from '../../models/task-form.model';
 
 @Component({
   selector: 'app-task-form',
@@ -18,7 +19,7 @@ export class TaskForm {
   private defaultPriority: TaskPriority = 'medium';
 
   @Input() submitText: string = 'submit default';
-  @Output() formSubmit = new EventEmitter();
+  @Output() formSubmit = new EventEmitter<TaskFormValue>();
 
   form = this.fb.group({
     title: this.fb.control('', {
