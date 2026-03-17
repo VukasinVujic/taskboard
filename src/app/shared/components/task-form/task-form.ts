@@ -1,4 +1,11 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  Output,
+} from '@angular/core';
 import {
   NonNullableFormBuilder,
   ReactiveFormsModule,
@@ -14,12 +21,24 @@ import { TaskFormValue } from '../../models/task-form.model';
   templateUrl: './task-form.html',
   styleUrl: './task-form.scss',
 })
-export class TaskForm {
+export class TaskForm implements OnChanges {
   private fb = inject(NonNullableFormBuilder);
   private defaultPriority: TaskPriority = 'medium';
 
   @Input() submitText: string = 'submit default';
+  @Input() task: TaskFormValue | null = null;
   @Output() formSubmit = new EventEmitter<TaskFormValue>();
+
+  ngOnChanges() {
+    if (this.task !== null) {
+      this.form.patchValue({
+        title: this.task.title ?? '',
+        description: this.task.description ?? '',
+        priority: this.task.priority ?? this.defaultPriority,
+        dueDate: this.task.dueDate ?? '',
+      });
+    }
+  }
 
   form = this.fb.group({
     title: this.fb.control('', {

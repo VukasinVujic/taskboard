@@ -1,4 +1,7 @@
 <div>
-  <app-task-form submitText="Create Task" (formSubmit)="onFormSubmit($event)">
+  <app-task-form
+    [submitText]="confirmTextString"
+    (formSubmit)="onFormSubmit($event)"
+  >
   </app-task-form>
 </div>
