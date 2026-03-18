@@ -1,8 +1,7 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { combineLatest, filter, map, of, shareReplay, switchMap } from 'rxjs';
+import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
 
 import { Task, TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -16,23 +15,14 @@ import { TaskFormValue } from '../../shared/models/task-form.model';
   templateUrl: './task-edit.html',
   styleUrl: './task-edit.scss',
 })
-export class TaskEdit implements OnInit {
+export class TaskEdit {
   protected readonly taskStore = inject(TaskStoreService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
   protected confirmTextString = 'Updated Task';
-
-  ngOnInit() {
-    this.task$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((task) => {
-      this.currentTask = task;
-    });
-  }
-
-  currentTask: Task | null = null;
 
   id$ = this.route.paramMap.pipe(
     map((params) => params.get('id')),
@@ -59,20 +49,18 @@ export class TaskEdit implements OnInit {
   onFormSubmit(updatedTask: TaskFormValue) {
     const { title, description, priority, dueDate } = updatedTask;
 
-    if (!this.currentTask) {
-      return;
-    }
-
-    this.taskStore.updateTaskDetails({
-      id: this.currentTask.id,
-      title,
-      description: description === '' ? undefined : description,
-      priority: priority ?? this.defaultPriority,
-      status: this.currentTask.status ?? this.defaultStatus,
-      dueDate: dueDate === '' ? undefined : dueDate,
-      createdAt: this.currentTask.createdAt,
+    this.task$.pipe(take(1)).subscribe((taskCurrent) => {
+      this.taskStore.updateTaskDetails({
+        id: taskCurrent.id,
+        title,
+        description: description === '' ? undefined : description,
+        priority: priority ?? this.defaultPriority,
+        status: taskCurrent.status ?? this.defaultStatus,
+        dueDate: dueDate === '' ? undefined : dueDate,
+        createdAt: taskCurrent.createdAt,
+      });
+      this.router.navigate(['/tasks']);
     });
-    this.router.navigate(['/tasks']);
   }
 
   closeEdit() {
