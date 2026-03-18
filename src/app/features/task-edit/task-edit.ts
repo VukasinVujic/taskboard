@@ -1,16 +1,17 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest, filter, map, of, shareReplay, switchMap } from 'rxjs';
 
 import { Task, TaskPriority, TaskStatus } from '../../core/models/task.model';
-import { ActivatedRoute, Router } from '@angular/router';
 import { TaskStoreService } from '../../core/services/task-store.service';
-import { combineLatest, filter, map, shareReplay } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TaskForm } from '../../shared/components/task-form/task-form';
 import { TaskFormValue } from '../../shared/models/task-form.model';
 
 @Component({
   selector: 'app-task-edit',
-  imports: [TaskForm],
+  imports: [CommonModule, TaskForm],
   standalone: true,
   templateUrl: './task-edit.html',
   styleUrl: './task-edit.scss',
@@ -28,16 +29,9 @@ export class TaskEdit implements OnInit {
   ngOnInit() {
     this.task$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((task) => {
       this.currentTask = task;
-      this.taskFormTask = {
-        title: task.title ?? '',
-        description: task.description ?? '',
-        priority: task.priority ?? this.defaultPriority,
-        dueDate: task.dueDate ?? '',
-      };
     });
   }
 
-  taskFormTask: TaskFormValue | null = null;
   currentTask: Task | null = null;
 
   id$ = this.route.paramMap.pipe(
@@ -51,6 +45,15 @@ export class TaskEdit implements OnInit {
     }),
     filter((task): task is Task => task !== undefined),
     shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  taskFormValue$ = this.task$.pipe(
+    map((task) => ({
+      title: task.title ?? '',
+      description: task.description ?? '',
+      priority: task.priority ?? this.defaultPriority,
+      dueDate: task.dueDate ?? '',
+    })),
   );
 
   onFormSubmit(updatedTask: TaskFormValue) {

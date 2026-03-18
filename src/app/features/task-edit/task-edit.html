@@ -5,11 +5,13 @@
       <button class="task-x-btn" (click)="closeEdit()">X</button>
     </div>
 
-    <app-task-form
-      [submitText]="confirmTextString"
-      (formSubmit)="onFormSubmit($event)"
-      [task]="taskFormTask"
-    >
-    </app-task-form>
+    @if (taskFormValue$ | async; as vm) {
+      <app-task-form
+        [submitText]="confirmTextString"
+        (formSubmit)="onFormSubmit($event)"
+        [task]="vm"
+      >
+      </app-task-form>
+    }
   </div>
 </div>
