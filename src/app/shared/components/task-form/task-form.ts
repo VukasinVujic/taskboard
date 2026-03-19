@@ -26,16 +26,16 @@ export class TaskForm implements OnChanges {
   private defaultPriority: TaskPriority = 'medium';
 
   @Input() submitText: string = 'submit default';
-  @Input() task: TaskFormValue | null = null;
+  @Input() initialValue: TaskFormValue | null = null;
   @Output() formSubmit = new EventEmitter<TaskFormValue>();
 
   ngOnChanges() {
-    if (this.task !== null) {
+    if (this.initialValue !== null) {
       this.form.patchValue({
-        title: this.task.title ?? '',
-        description: this.task.description ?? '',
-        priority: this.task.priority ?? this.defaultPriority,
-        dueDate: this.task.dueDate ?? '',
+        title: this.initialValue.title ?? '',
+        description: this.initialValue.description ?? '',
+        priority: this.initialValue.priority ?? this.defaultPriority,
+        dueDate: this.initialValue.dueDate ?? '',
       });
     }
   }
