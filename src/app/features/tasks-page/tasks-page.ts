@@ -4,11 +4,10 @@ import { CommonModule } from '@angular/common';
 import { TaskList } from '../task-list/task-list';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { TaskForm } from '../../shared/components/task-form/task-form';
 
 @Component({
   selector: 'app-tasks-page',
-  imports: [CommonModule, TaskList, TaskForm],
+  imports: [CommonModule, TaskList],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.scss',
 })

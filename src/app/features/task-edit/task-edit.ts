@@ -31,35 +31,40 @@ export class TaskEdit {
 
   task$ = combineLatest([this.id$, this.taskStore.tasks$]).pipe(
     map(([id, tasks]) => {
-      return tasks.find((task) => task.id === id);
+      return tasks.find((task) => task.id === id) ?? null;
     }),
-    filter((task): task is Task => task !== undefined),
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   taskFormValue$ = this.task$.pipe(
-    map((task) => ({
-      title: task.title ?? '',
-      description: task.description ?? '',
-      priority: task.priority ?? this.defaultPriority,
-      dueDate: task.dueDate ?? '',
-    })),
+    map((task) => {
+      return task
+        ? {
+            title: task.title ?? '',
+            description: task.description ?? '',
+            priority: task.priority ?? this.defaultPriority,
+            dueDate: task.dueDate ?? '',
+          }
+        : null;
+    }),
   );
 
   onFormSubmit(updatedTask: TaskFormValue) {
     const { title, description, priority, dueDate } = updatedTask;
 
     this.task$.pipe(take(1)).subscribe((taskCurrent) => {
-      this.taskStore.updateTaskDetails({
-        id: taskCurrent.id,
-        title,
-        description: description === '' ? undefined : description,
-        priority: priority ?? this.defaultPriority,
-        status: taskCurrent.status ?? this.defaultStatus,
-        dueDate: dueDate === '' ? undefined : dueDate,
-        createdAt: taskCurrent.createdAt,
-      });
-      this.router.navigate(['/tasks']);
+      if (taskCurrent !== null) {
+        this.taskStore.updateTaskDetails({
+          id: taskCurrent.id,
+          title,
+          description: description === '' ? undefined : description,
+          priority: priority ?? this.defaultPriority,
+          status: taskCurrent.status ?? this.defaultStatus,
+          dueDate: dueDate === '' ? undefined : dueDate,
+          createdAt: taskCurrent.createdAt,
+        });
+        this.router.navigate(['/tasks']);
+      }
     });
   }
 
