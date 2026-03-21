@@ -23,6 +23,7 @@ export class TaskEdit {
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
   protected confirmTextString = 'Updated Task';
+  protected notFoundText = 'Task not found ...';
 
   id$ = this.route.paramMap.pipe(
     map((params) => params.get('id')),
