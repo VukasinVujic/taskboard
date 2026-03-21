@@ -3,16 +3,13 @@ import { CommonModule } from '@angular/common';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  catchError,
-  concat,
+  combineLatest,
   distinctUntilChanged,
   filter,
   map,
-  of,
   shareReplay,
-  switchMap,
 } from 'rxjs';
-import { TaskApiService } from '../../core/services/task-api.service';
+import { TaskStoreService } from '../../core/services/task-store.service';
 
 @Component({
   selector: 'app-task-detail-page',
@@ -21,7 +18,8 @@ import { TaskApiService } from '../../core/services/task-api.service';
   styleUrl: './task-detail-page.scss',
 })
 export class TaskDetailPage {
-  private readonly api = inject(TaskApiService);
+  protected readonly taskStore = inject(TaskStoreService);
+
   private readonly route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -31,18 +29,9 @@ export class TaskDetailPage {
     distinctUntilChanged(),
   );
 
-  vm$ = this.id$.pipe(
-    switchMap((id) => {
-      const loading$ = of({ state: 'loading' } as const);
-
-      const api$ = this.api.getTaskById(id).pipe(
-        map((task) => ({ state: 'ready', task }) as const),
-        catchError(() => {
-          return of({ state: 'error', message: ' error, not found' } as const);
-        }),
-      );
-
-      return concat(loading$, api$);
+  task$ = combineLatest([this.id$, this.taskStore.tasks$]).pipe(
+    map(([id, tasks]) => {
+      return tasks.find((task) => task.id === id) ?? null;
     }),
     shareReplay({ bufferSize: 1, refCount: true }),
   );

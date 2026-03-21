@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
 
-import { Task, TaskPriority, TaskStatus } from '../../core/models/task.model';
+import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskForm } from '../../shared/components/task-form/task-form';
 import { TaskFormValue } from '../../shared/models/task-form.model';
