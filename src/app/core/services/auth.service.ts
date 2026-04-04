@@ -7,6 +7,7 @@ export class AuthService {
   private token: string | null = 'fake-jwt-token';
 
   getToken(): string | null {
+    // return null;
     return this.token;
   }
 
