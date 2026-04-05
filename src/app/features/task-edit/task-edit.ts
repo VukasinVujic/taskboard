@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
+import { combineLatest, filter, map, shareReplay, take, tap } from 'rxjs';
 
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -36,6 +36,13 @@ export class TaskEdit {
     }),
     shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  // resolver logic
+  // task$ = this.route.data.pipe(
+  //   tap((data) => console.log('task: ', data['task'])),
+  //   map((data) => data['task'] ?? null),
+  //   shareReplay({ bufferSize: 1, refCount: true }),
+  // );
 
   taskFormValue$ = this.task$.pipe(
     map((task) => {
