@@ -10,6 +10,7 @@
         [submitText]="confirmTextString"
         (formSubmit)="onFormSubmit($event)"
         [initialValue]="vm"
+        (dirtyChange)="onDirtyChange($event)"
       >
       </app-task-form>
     } @else {

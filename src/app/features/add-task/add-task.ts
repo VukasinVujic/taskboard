@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -22,6 +22,8 @@ export class AddTask {
   private defaultStatus: TaskStatus = 'todo';
   protected confirmTextString = 'Create Task';
 
+  @Output() dirtyChange = new EventEmitter<boolean>();
+
   onFormSubmit(newTask: TaskFormValue) {
     const { title, description, priority, dueDate } = newTask;
 
@@ -34,5 +36,9 @@ export class AddTask {
       dueDate: dueDate,
       createdAt: new Date().toISOString(),
     });
+  }
+
+  onDirtyChange(event: boolean) {
+    this.dirtyChange.emit(event);
   }
 }

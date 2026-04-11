@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, filter, map, shareReplay, take, tap } from 'rxjs';
+import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
 
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
 import { TaskForm } from '../../shared/components/task-form/task-form';
 import { TaskFormValue } from '../../shared/models/task-form.model';
+import { CanComponentDeactivate } from '../../shared/models/can-component-deactivate';
 
 @Component({
   selector: 'app-task-edit',
@@ -15,13 +16,15 @@ import { TaskFormValue } from '../../shared/models/task-form.model';
   templateUrl: './task-edit.html',
   styleUrl: './task-edit.scss',
 })
-export class TaskEdit {
+export class TaskEdit implements CanComponentDeactivate {
   protected readonly taskStore = inject(TaskStoreService);
 
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private defaultPriority: TaskPriority = 'medium';
   private defaultStatus: TaskStatus = 'todo';
+  private hasUnsavedChanges: boolean = false;
+  private allowExit: boolean = false;
   protected confirmTextString = 'Updated Task';
   protected notFoundText = 'Task not found ...';
 
@@ -71,12 +74,32 @@ export class TaskEdit {
           dueDate: dueDate === '' ? undefined : dueDate,
           createdAt: taskCurrent.createdAt,
         });
+        this.allowExit = true;
         this.router.navigate(['/tasks']);
       }
     });
   }
 
+  canDeactivate() {
+    if (this.allowExit) {
+      return true;
+    }
+
+    if (this.hasUnsavedChanges) {
+      const result = window.confirm(
+        ' You have unsaved chagnes. Are you sure you want to exti? ',
+      );
+      return result;
+    }
+
+    return true;
+  }
+
   closeEdit() {
     this.router.navigate(['/tasks']);
+  }
+
+  onDirtyChange(event: boolean) {
+    this.hasUnsavedChanges = event;
   }
 }

@@ -1,9 +1,11 @@
 import {
   Component,
+  DestroyRef,
   EventEmitter,
   inject,
   Input,
   OnChanges,
+  OnInit,
   Output,
 } from '@angular/core';
 import {
@@ -13,6 +15,7 @@ import {
 } from '@angular/forms';
 import { TaskPriority } from '../../../core/models/task.model';
 import { TaskFormValue } from '../../models/task-form.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-task-form',
@@ -21,13 +24,23 @@ import { TaskFormValue } from '../../models/task-form.model';
   templateUrl: './task-form.html',
   styleUrl: './task-form.scss',
 })
-export class TaskForm implements OnChanges {
+export class TaskForm implements OnChanges, OnInit {
   private fb = inject(NonNullableFormBuilder);
   private defaultPriority: TaskPriority = 'medium';
+  private readonly destroyRef = inject(DestroyRef);
 
   @Input() submitText: string = 'submit default';
   @Input() initialValue: TaskFormValue | null = null;
   @Output() formSubmit = new EventEmitter<TaskFormValue>();
+  @Output() dirtyChange = new EventEmitter<boolean>();
+
+  ngOnInit() {
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.dirtyChange.emit(this.form.dirty);
+      });
+  }
 
   ngOnChanges() {
     if (this.initialValue !== null) {
