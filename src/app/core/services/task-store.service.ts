@@ -138,9 +138,18 @@ export class TaskStoreService {
 
       const loading$ = of({ type: 'loading' } as const);
 
-      const api$ = this.api.searchTasks(term).pipe(
-        map((tasks): SuccessEvent => ({ type: 'success', tasks })),
-        catchError(() => {
+      // const api$ = this.api.searchTasks(term).pipe(
+      const api$ = this.tasks$.pipe(
+        map((tasks) => {
+          const normalizedTerm = term.toLowerCase().trim();
+
+          const filteredTask = tasks.filter((task) =>
+            task.title.toLowerCase().includes(normalizedTerm),
+          );
+
+          return { type: 'success', tasks: filteredTask } as SuccessEvent;
+        }),
+        catchError((err) => {
           this.toastService.show('Search failed', 'error');
           return of({ type: 'error' } as ErrorEvent);
         }),
@@ -167,8 +176,7 @@ export class TaskStoreService {
 
   searchLoading$ = this.searchEvents$.pipe(
     map((event: SearchEvent) => {
-      if (event.type === 'loading') return true;
-      return false;
+      return event.type === 'loading';
     }),
     distinctUntilChanged(),
     shareReplay({ bufferSize: 1, refCount: true }),
@@ -176,10 +184,7 @@ export class TaskStoreService {
 
   searchError$ = this.searchEvents$.pipe(
     map((event: SearchEvent) => {
-      if (event.type === 'error') return true;
-      if (event.type === 'loading') return false;
-      if (event.type === 'success') return false;
-      return false;
+      return event.type === 'error';
     }),
     distinctUntilChanged(),
     shareReplay({ bufferSize: 1, refCount: true }),
@@ -350,36 +355,6 @@ export class TaskStoreService {
     tap((jsonString) =>
       localStorage.setItem(this.TASKBOARD_UI_PREFS_KEY, jsonString),
     ),
-  );
-
-  term$ = this.searchTerm$.pipe(
-    map((term) => term.trim()),
-    debounceTime(300),
-    distinctUntilChanged(),
-  );
-
-  triggeredTerm$ = merge(this.term$, this.retryTerm$);
-
-  searchState$ = this.triggeredTerm$.pipe(
-    switchMap((term) => {
-      if (term.length < 2)
-        return this.tasks$.pipe(
-          map((tasks) => ({ term, data: tasks, loading: false, error: null })),
-        );
-      return this.api.searchTasks(term).pipe(
-        startWith({ term, data: [], loading: true, error: null }),
-        map((result) => ({ term, data: result, loading: false, error: null })),
-        catchError((error) =>
-          of({
-            term,
-            loading: false,
-            data: [],
-            error: this.translator(error),
-          }),
-        ),
-      );
-    }),
-    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   triggerStream$ = this._deleteTaskRequested$.pipe(
