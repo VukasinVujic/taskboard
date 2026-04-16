@@ -23,6 +23,7 @@ export class AddTask {
   protected confirmTextString = 'Create Task';
 
   @Output() dirtyChange = new EventEmitter<boolean>();
+  @Output() allowExitValue = new EventEmitter<boolean>();
 
   onFormSubmit(newTask: TaskFormValue) {
     const { title, description, priority, dueDate } = newTask;
@@ -36,6 +37,11 @@ export class AddTask {
       dueDate: dueDate,
       createdAt: new Date().toISOString(),
     });
+    this.onAllowExit(true);
+  }
+
+  onAllowExit(event: boolean) {
+    this.allowExitValue.emit(event);
   }
 
   onDirtyChange(event: boolean) {

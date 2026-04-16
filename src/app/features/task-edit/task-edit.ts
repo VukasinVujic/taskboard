@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
@@ -15,6 +15,7 @@ import { CanComponentDeactivate } from '../../shared/models/can-component-deacti
   standalone: true,
   templateUrl: './task-edit.html',
   styleUrl: './task-edit.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskEdit implements CanComponentDeactivate {
   protected readonly taskStore = inject(TaskStoreService);

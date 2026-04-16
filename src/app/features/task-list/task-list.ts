@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { TaskStatus, Task } from '../../core/models/task.model';
@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
   standalone: true,
   templateUrl: './task-list.html',
   styleUrl: './task-list.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskList {
   protected readonly taskStore = inject(TaskStoreService);

@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   EventEmitter,
   HostListener,
@@ -19,6 +20,7 @@ import { Router } from '@angular/router';
   standalone: true,
   templateUrl: './task-column.html',
   styleUrl: './task-column.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskColumn {
   @Input() title = '';

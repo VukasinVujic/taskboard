@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AddTask } from '../add-task/add-task';
 import { TaskApiService } from '../../core/services/task-api.service';
 import { Router } from '@angular/router';
@@ -9,13 +9,14 @@ import { CanComponentDeactivate } from '../../shared/models/can-component-deacti
   imports: [AddTask],
   templateUrl: './task-create-page.html',
   styleUrl: './task-create-page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskCreatePage implements CanComponentDeactivate {
   protected readonly api = inject(TaskApiService);
   private router = inject(Router);
 
   private hasUnsavedChanges: boolean = false;
-  private allowExit: boolean = false;
+  protected allowExit: boolean = false;
 
   canDeactivate() {
     if (this.allowExit) {
@@ -34,6 +35,10 @@ export class TaskCreatePage implements CanComponentDeactivate {
 
   onDirtyChange(event: boolean) {
     this.hasUnsavedChanges = event;
+  }
+
+  onAllowExit(event: boolean) {
+    this.allowExit = event;
   }
 
   goBack() {
