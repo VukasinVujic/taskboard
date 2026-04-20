@@ -9,8 +9,10 @@ import {
   Output,
 } from '@angular/core';
 import {
+  AbstractControl,
   NonNullableFormBuilder,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { TaskPriority } from '../../../core/models/task.model';
@@ -40,6 +42,15 @@ export class TaskForm implements OnChanges, OnInit {
       .subscribe(() => {
         this.dirtyChange.emit(this.form.dirty);
       });
+    this.priorityControl?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((priority) => {
+        priority === 'high'
+          ? this.dueDateControl?.setValidators([Validators.required])
+          : this.dueDateControl?.clearValidators();
+
+        this.dueDateControl?.updateValueAndValidity();
+      });
   }
 
   ngOnChanges() {
@@ -55,7 +66,11 @@ export class TaskForm implements OnChanges, OnInit {
 
   form = this.fb.group({
     title: this.fb.control('', {
-      validators: [Validators.required, Validators.minLength(2)],
+      validators: [
+        Validators.required,
+        Validators.minLength(2),
+        titleWhitespaceValidator,
+      ],
     }),
     description: this.fb.control(''),
     priority: this.fb.control<TaskPriority>(this.defaultPriority, {
@@ -71,6 +86,14 @@ export class TaskForm implements OnChanges, OnInit {
     return this.form.get('title');
   }
 
+  get priorityControl() {
+    return this.form.get('priority');
+  }
+
+  get dueDateControl() {
+    return this.form.get('dueDate');
+  }
+
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -82,4 +105,15 @@ export class TaskForm implements OnChanges, OnInit {
     this.formSubmit.emit({ title, description, priority, dueDate });
     console.log('submit form');
   }
+}
+
+export function titleWhitespaceValidator(
+  arg: AbstractControl,
+): ValidationErrors | null {
+  if (typeof arg.value === 'string') {
+    if (arg.value.trim().length === 0) {
+      return { whitespaceOnly: true };
+    }
+  }
+  return null;
 }

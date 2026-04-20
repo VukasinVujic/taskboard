@@ -8,10 +8,13 @@
     @if (titleControl?.touched && titleControl?.invalid) {
       <div class="error">
         @if (titleControl?.errors?.["required"]) {
-          <span>Title is required</span>
+          <span>Title is required. </span>
         }
         @if (titleControl?.errors?.["minlength"]) {
           <span>Title must be at least 2 characters</span>
+        }
+        @if (titleControl?.errors?.["whitespaceOnly"]) {
+          <span>Title can not be just space </span>
         }
       </div>
     }
@@ -31,13 +34,24 @@
     <select id="priority" formControlName="priority">
       <option value="low">Low</option>
       <option value="medium">Medium</option>
-      <option value="high">Heigh</option>
+      <option value="high">High</option>
     </select>
   </div>
 
   <div class="field">
-    <label for="dueDate">Duo date: </label>
+    <label for="dueDate">Due date: </label>
     <input type="date" id="dueDate" formControlName="dueDate" />
+    @if (
+      priorityControl?.value === "high" &&
+      dueDateControl?.invalid &&
+      dueDateControl?.touched
+    ) {
+      <div class="error">
+        @if (dueDateControl?.errors?.["required"]) {
+          <span>When priority is high , Due Date is requried </span>
+        }
+      </div>
+    }
   </div>
 
   <button type="submit" [disabled]="form.invalid">{{ submitText }}</button>
