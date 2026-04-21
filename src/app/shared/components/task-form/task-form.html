@@ -5,6 +5,12 @@
     <label for="title">Title: </label>
     <input type="text" id="title" formControlName="title" />
 
+    @if (titleControl?.pending) {
+      <div class="error">
+        <span>Checking title...</span>
+      </div>
+    }
+
     @if (titleControl?.touched && titleControl?.invalid) {
       <div class="error">
         @if (titleControl?.errors?.["required"]) {
@@ -15,6 +21,9 @@
         }
         @if (titleControl?.errors?.["whitespaceOnly"]) {
           <span>Title can not be just space </span>
+        }
+        @if (titleControl?.errors?.["titleTaken"]) {
+          <span>Title already exist by this name.</span>
         }
       </div>
     }

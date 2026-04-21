@@ -10,14 +10,17 @@ import {
 } from '@angular/core';
 import {
   AbstractControl,
+  AsyncValidatorFn,
   NonNullableFormBuilder,
   ReactiveFormsModule,
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { TaskPriority } from '../../../core/models/task.model';
+import { Task, TaskPriority } from '../../../core/models/task.model';
 import { TaskFormValue } from '../../models/task-form.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { delay, map, Observable, of, switchMap, take } from 'rxjs';
+import { TaskStoreService } from '../../../core/services/task-store.service';
 
 @Component({
   selector: 'app-task-form',
@@ -29,6 +32,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class TaskForm implements OnChanges, OnInit {
   private fb = inject(NonNullableFormBuilder);
   private defaultPriority: TaskPriority = 'medium';
+  protected readonly taskStore = inject(TaskStoreService);
   private readonly destroyRef = inject(DestroyRef);
 
   @Input() submitText: string = 'submit default';
@@ -71,6 +75,7 @@ export class TaskForm implements OnChanges, OnInit {
         Validators.minLength(2),
         titleWhitespaceValidator,
       ],
+      asyncValidators: [uniqueTitleAsyncValidator(this.taskStore)],
     }),
     description: this.fb.control(''),
     priority: this.fb.control<TaskPriority>(this.defaultPriority, {
@@ -116,4 +121,32 @@ export function titleWhitespaceValidator(
     }
   }
   return null;
+}
+
+export function uniqueTitleAsyncValidator(
+  taskStore: TaskStoreService,
+): AsyncValidatorFn {
+  return (control: AbstractControl) => {
+    if (typeof control.value !== 'string') {
+      return of(null);
+    }
+
+    const normalizedTitle = control.value.trim().toLowerCase();
+
+    if (!normalizedTitle) {
+      return of(null);
+    }
+
+    return taskStore.tasks$.pipe(
+      take(1),
+      delay(300),
+      map((tasks) => {
+        const titleExists = tasks.some(
+          (task) => task.title.trim().toLowerCase() === normalizedTitle,
+        );
+
+        return titleExists ? { titleTaken: true } : null;
+      }),
+    );
+  };
 }

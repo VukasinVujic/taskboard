@@ -74,6 +74,7 @@ export class TaskStoreService {
 
   // ======= states =======
   private readonly _tasks$ = new BehaviorSubject<Task[]>([]);
+
   readonly tasks$ = this._tasks$.asObservable();
 
   private readonly _searchTerm$ = new BehaviorSubject<string>('');
