@@ -1,7 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, filter, map, shareReplay, take } from 'rxjs';
+import {
+  combineLatest,
+  combineLatestAll,
+  filter,
+  map,
+  shareReplay,
+  take,
+} from 'rxjs';
 
 import { TaskPriority, TaskStatus } from '../../core/models/task.model';
 import { TaskStoreService } from '../../core/services/task-store.service';
@@ -29,6 +36,7 @@ export class TaskEdit implements CanComponentDeactivate {
   protected confirmTextString = 'Updated Task';
   protected notFoundText = 'Task not found ...';
 
+  //
   id$ = this.route.paramMap.pipe(
     map((params) => params.get('id')),
     filter((id) => id !== null),
@@ -59,6 +67,13 @@ export class TaskEdit implements CanComponentDeactivate {
           }
         : null;
     }),
+  );
+
+  initialValueVM$ = combineLatest([this.taskFormValue$, this.id$]).pipe(
+    map(([initialValue, currentTaskId]) => {
+      return { initialValue, currentTaskId };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   onFormSubmit(updatedTask: TaskFormValue) {

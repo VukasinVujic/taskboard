@@ -19,7 +19,7 @@ import {
 import { Task, TaskPriority } from '../../../core/models/task.model';
 import { TaskFormValue } from '../../models/task-form.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { delay, map, Observable, of, switchMap, take } from 'rxjs';
+import { delay, find, map, Observable, of, switchMap, take } from 'rxjs';
 import { TaskStoreService } from '../../../core/services/task-store.service';
 
 @Component({
@@ -37,6 +37,7 @@ export class TaskForm implements OnChanges, OnInit {
 
   @Input() submitText: string = 'submit default';
   @Input() initialValue: TaskFormValue | null = null;
+  @Input() currentTaskId: string | null = null;
   @Output() formSubmit = new EventEmitter<TaskFormValue>();
   @Output() dirtyChange = new EventEmitter<boolean>();
 
@@ -75,7 +76,9 @@ export class TaskForm implements OnChanges, OnInit {
         Validators.minLength(2),
         titleWhitespaceValidator,
       ],
-      asyncValidators: [uniqueTitleAsyncValidator(this.taskStore)],
+      asyncValidators: [
+        uniqueTitleAsyncValidator(this.taskStore, this.currentTaskId),
+      ],
     }),
     description: this.fb.control(''),
     priority: this.fb.control<TaskPriority>(this.defaultPriority, {
@@ -125,6 +128,7 @@ export function titleWhitespaceValidator(
 
 export function uniqueTitleAsyncValidator(
   taskStore: TaskStoreService,
+  currentTaskId?: string | null,
 ): AsyncValidatorFn {
   return (control: AbstractControl) => {
     if (typeof control.value !== 'string') {
@@ -142,7 +146,9 @@ export function uniqueTitleAsyncValidator(
       delay(300),
       map((tasks) => {
         const titleExists = tasks.some(
-          (task) => task.title.trim().toLowerCase() === normalizedTitle,
+          (task) =>
+            task.title.trim().toLowerCase() === normalizedTitle &&
+            task.id !== currentTaskId,
         );
 
         return titleExists ? { titleTaken: true } : null;

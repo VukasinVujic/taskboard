@@ -5,11 +5,12 @@
       <button class="task-x-btn" (click)="closeEdit()">X</button>
     </div>
 
-    @if (taskFormValue$ | async; as vm) {
+    @if (initialValueVM$ | async; as vm) {
       <app-task-form
         [submitText]="confirmTextString"
         (formSubmit)="onFormSubmit($event)"
-        [initialValue]="vm"
+        [initialValue]="vm.initialValue"
+        [currentTaskId]="vm.currentTaskId"
         (dirtyChange)="onDirtyChange($event)"
       >
       </app-task-form>
