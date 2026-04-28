@@ -25,6 +25,9 @@
         @if (titleControl?.errors?.["titleTaken"]) {
           <span>Title already exist by this name.</span>
         }
+        @if (titleControl?.errors?.["titleTaken"]) {
+          <span>This title name is a duplicate</span>
+        }
       </div>
     }
   </div>

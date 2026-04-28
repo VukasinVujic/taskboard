@@ -16,10 +16,10 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Task, TaskPriority } from '../../../core/models/task.model';
+import { TaskPriority } from '../../../core/models/task.model';
 import { TaskFormValue } from '../../models/task-form.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { delay, find, map, Observable, of, switchMap, take } from 'rxjs';
+import { delay, map, of, take } from 'rxjs';
 import { TaskStoreService } from '../../../core/services/task-store.service';
 
 @Component({
