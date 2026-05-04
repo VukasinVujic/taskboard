@@ -9,4 +9,9 @@
 
   --color-text: #111827;
   --color-muted: #6b7280;
+
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
 }

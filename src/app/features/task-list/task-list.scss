@@ -1,17 +1,53 @@
 .upperHeader {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  p {
+    font-size: var(--font-size-md);
+    color: var(--color-muted);
+  }
 
   .upperHeaderBtn {
     background-color: var(--color-primary);
     border-radius: 10px;
-    border: 1px solid var(--color-border);
+    border: none;
     color: var(--color-surface);
+    padding: 10px 20px;
+    font-size: var(--font-size-md);
+    cursor: pointer;
   }
 }
 
 .actions button {
   margin-left: 30px;
+}
+
+.taskToolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+
+  .taskToolbar-input,
+  .taskToolbar-select {
+    outline: none;
+    border-color: var(--color-primary);
+    padding: 5px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .taskToolbar-input {
+    width: 280px;
+  }
+
+  .taskToolbar-select {
+    width: 140px;
+  }
 }
 
 .kanaban {
